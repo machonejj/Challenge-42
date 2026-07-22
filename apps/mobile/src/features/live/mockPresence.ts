@@ -1,8 +1,11 @@
 /**
- * DEV seed for the community presence map (demo data). Positions are APPROXIMATE (normalized 0–1 on
- * the stylized US map) — never precise coordinates, matching the privacy rule that location is
- * city-level at most. Real data later projects coarse city lat/lng the same way.
+ * DEV seed for the community presence map (demo data). Dot positions come from real city lon/lat
+ * projected through the same Albers-USA projection as the map (see usMapData.ts / scripts/genUsMap),
+ * so they land accurately — but they remain APPROXIMATE (city-level), matching the privacy rule that
+ * location is never precise.
  */
+import { CITY_XY } from './usMapData';
+
 export type SubmissionKind = 'meal' | 'workout' | 'photo' | 'message';
 
 export interface PresenceDot {
@@ -10,21 +13,27 @@ export interface PresenceDot {
   name: string;
   city: string;
   state: string;
-  /** Normalized position on the map (0–1). Approximate — city-level, deliberately imprecise. */
-  x: number;
+  x: number; // 0–1 on the map (projected, city-level)
   y: number;
   online: boolean;
   submission?: { kind: SubmissionKind; label: string };
 }
 
-export const mockPresence: readonly PresenceDot[] = [
+interface DotMeta {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  online: boolean;
+  submission?: { kind: SubmissionKind; label: string };
+}
+
+const META: readonly DotMeta[] = [
   {
     id: 'p1',
     name: 'Jake M.',
     city: 'Palmdale',
     state: 'CA',
-    x: 0.12,
-    y: 0.6,
     online: true,
     submission: { kind: 'workout', label: '20-min home workout' },
   },
@@ -33,8 +42,6 @@ export const mockPresence: readonly PresenceDot[] = [
     name: 'Sarah L.',
     city: 'Austin',
     state: 'TX',
-    x: 0.52,
-    y: 0.78,
     online: true,
     submission: { kind: 'meal', label: 'Sheet-pan chicken & veg' },
   },
@@ -43,8 +50,6 @@ export const mockPresence: readonly PresenceDot[] = [
     name: 'Mike R.',
     city: 'Denver',
     state: 'CO',
-    x: 0.4,
-    y: 0.48,
     online: true,
     submission: { kind: 'workout', label: 'Push day' },
   },
@@ -53,8 +58,6 @@ export const mockPresence: readonly PresenceDot[] = [
     name: 'Jessica P.',
     city: 'Portland',
     state: 'OR',
-    x: 0.1,
-    y: 0.23,
     online: false,
     submission: { kind: 'meal', label: 'Greek yogurt bowls' },
   },
@@ -63,19 +66,15 @@ export const mockPresence: readonly PresenceDot[] = [
     name: 'Anthony D.',
     city: 'Chicago',
     state: 'IL',
-    x: 0.64,
-    y: 0.4,
     online: true,
     submission: { kind: 'photo', label: 'Family taco night' },
   },
-  { id: 'p6', name: 'Maria G.', city: 'Miami', state: 'FL', x: 0.88, y: 0.85, online: true },
+  { id: 'p6', name: 'Maria G.', city: 'Miami', state: 'FL', online: true },
   {
     id: 'p7',
     name: 'Priya N.',
     city: 'Boston',
     state: 'MA',
-    x: 0.89,
-    y: 0.3,
     online: false,
     submission: { kind: 'message', label: 'Day 12 — still going!' },
   },
@@ -84,25 +83,27 @@ export const mockPresence: readonly PresenceDot[] = [
     name: 'David K.',
     city: 'Seattle',
     state: 'WA',
-    x: 0.11,
-    y: 0.19,
     online: true,
     submission: { kind: 'workout', label: 'Zone 2 ride' },
   },
-  { id: 'p9', name: 'Elena R.', city: 'Nashville', state: 'TN', x: 0.68, y: 0.55, online: false },
+  { id: 'p9', name: 'Elena R.', city: 'Nashville', state: 'TN', online: false },
   {
     id: 'p10',
     name: 'Chris B.',
     city: 'Atlanta',
     state: 'GA',
-    x: 0.76,
-    y: 0.62,
     online: true,
     submission: { kind: 'meal', label: 'Turkey chili' },
   },
-  { id: 'p11', name: 'Nina S.', city: 'San Diego', state: 'CA', x: 0.15, y: 0.67, online: false },
-  { id: 'p12', name: 'Tom W.', city: 'New York', state: 'NY', x: 0.85, y: 0.37, online: true },
+  { id: 'p11', name: 'Nina S.', city: 'San Diego', state: 'CA', online: false },
+  { id: 'p12', name: 'Tom W.', city: 'New York', state: 'NY', online: true },
 ];
+
+export const mockPresence: readonly PresenceDot[] = META.map((m) => ({
+  ...m,
+  x: CITY_XY[m.id]?.x ?? 0.5,
+  y: CITY_XY[m.id]?.y ?? 0.5,
+}));
 
 export const SUBMISSION_META: Record<SubmissionKind, { emoji: string; label: string }> = {
   meal: { emoji: '🍽️', label: 'Meal' },

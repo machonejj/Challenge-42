@@ -4,15 +4,12 @@ import Svg, { Path } from 'react-native-svg';
 import { colors, radius } from '@challenge42/config';
 import { LiveDot } from '@/components/ui/LiveDot';
 import type { PresenceDot } from '@/features/live/mockPresence';
+import { US_STATE_PATHS, US_VIEWBOX } from '@/features/live/usMapData';
 
-// Stylized continental-US silhouette (viewBox 100×62). Deliberately approximate — a "general
-// location" map, not a zoomable street map, which keeps location privacy-safe by construction.
-const US_PATH =
-  'M8,12 L30,9 L50,8 L53,12 L57,10 L60,13 L63,9 L85,6 L93,7 L90,12 L86,18 L84,24 L85,31 ' +
-  'L88,40 L89,52 L86,54 L83,45 L82,42 L74,44 L66,46 L60,45 L56,49 L52,55 L48,50 L40,49 ' +
-  'L32,49 L22,47 L16,43 L12,34 L9,24 L7,16 Z';
+// Accurate continental-US map (state borders, Albers-USA) in a 960×600 viewBox. Dots are projected
+// through the same projection, so they land at the right cities — still city-level only (privacy).
+const ASPECT = 960 / 600;
 
-/** Fills its parent's width; measures its real rendered size so dots position accurately. */
 export function USPresenceMap({ dots }: { dots: readonly PresenceDot[] }): React.JSX.Element {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const onLayout = (e: LayoutChangeEvent) => {
@@ -22,15 +19,18 @@ export function USPresenceMap({ dots }: { dots: readonly PresenceDot[] }): React
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 62" preserveAspectRatio="xMidYMid meet">
-        <Path
-          d={US_PATH}
-          fill="rgba(18, 56, 43, 0.09)"
-          stroke={colors.brand.pine}
-          strokeOpacity={0.35}
-          strokeWidth={0.7}
-          strokeLinejoin="round"
-        />
+      <Svg width="100%" height="100%" viewBox={US_VIEWBOX} preserveAspectRatio="xMidYMid meet">
+        {US_STATE_PATHS.map((d, i) => (
+          <Path
+            key={i}
+            d={d}
+            fill="rgba(18, 56, 43, 0.07)"
+            stroke={colors.brand.pine}
+            strokeOpacity={0.28}
+            strokeWidth={0.8}
+            strokeLinejoin="round"
+          />
+        ))}
       </Svg>
 
       {size.w > 0
@@ -54,7 +54,7 @@ export function USPresenceMap({ dots }: { dots: readonly PresenceDot[] }): React
 }
 
 const styles = StyleSheet.create({
-  container: { width: '100%', aspectRatio: 100 / 62, position: 'relative' },
+  container: { width: '100%', aspectRatio: ASPECT, position: 'relative' },
   dotWrap: {
     position: 'absolute',
     width: 20,

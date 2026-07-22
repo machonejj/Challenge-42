@@ -8,3 +8,6 @@ coverage
 *.tsbuildinfo
 package-lock.json
 supabase/migrations
+
+# generated map data (accurate US state paths)
+apps/mobile/src/features/live/usMapData.ts
