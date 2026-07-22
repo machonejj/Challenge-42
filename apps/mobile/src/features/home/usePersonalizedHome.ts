@@ -4,6 +4,7 @@
  * The seam is the same `HomeSnapshot` contract, so nothing downstream changes.
  */
 import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { buildWeightDelta, challengeDayNumber, kgToDisplay, round } from '@challenge42/domain';
 import type { HomeSnapshot } from '@challenge42/types';
 import { useHomeSnapshot } from './useHomeSnapshot';
@@ -15,18 +16,22 @@ function todayISODate(): string {
 
 export function usePersonalizedHome() {
   const query = useHomeSnapshot();
-  const profile = useProfileStore((s) => ({
-    enrolled: s.enrolled,
-    firstName: s.firstName,
-    weightUnit: s.weightUnit,
-    challengeName: s.challengeName,
-    challengeStartDate: s.challengeStartDate,
-    challengeLengthDays: s.challengeLengthDays,
-    startWeightKg: s.startWeightKg,
-    latestWeightKg: s.latestWeightKg,
-    recommendation: s.recommendation,
-    safetyStatus: s.safetyStatus,
-  }));
+  // useShallow: this selector builds a new object each call, so without shallow equality Zustand
+  // would re-render on every render → "Maximum update depth exceeded".
+  const profile = useProfileStore(
+    useShallow((s) => ({
+      enrolled: s.enrolled,
+      firstName: s.firstName,
+      weightUnit: s.weightUnit,
+      challengeName: s.challengeName,
+      challengeStartDate: s.challengeStartDate,
+      challengeLengthDays: s.challengeLengthDays,
+      startWeightKg: s.startWeightKg,
+      latestWeightKg: s.latestWeightKg,
+      recommendation: s.recommendation,
+      safetyStatus: s.safetyStatus,
+    })),
+  );
 
   const data = useMemo<HomeSnapshot | undefined>(() => {
     const base = query.data;

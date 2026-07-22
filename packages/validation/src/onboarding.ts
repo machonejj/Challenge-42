@@ -36,11 +36,11 @@ export const finalizeOnboardingSchema = z.object({
   underMedicalCare: z.boolean().default(false),
   eatingDisorderHistory: z.boolean().default(false),
 
-  // Pilot baseline
+  // Pilot baseline (confidence + satisfaction are asked; the rest are optional / added later)
   confidenceCompletion: scale,
   habitSatisfaction: scale,
-  foodControl: scale,
-  exerciseConsistency: scale,
+  foodControl: scale.optional(),
+  exerciseConsistency: scale.optional(),
 });
 export type FinalizeOnboardingInput = z.infer<typeof finalizeOnboardingSchema>;
 
