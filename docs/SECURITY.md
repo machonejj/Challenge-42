@@ -119,6 +119,25 @@ revocable** consent. Modeled as separate rows in `success_story_consents`:
 applicable consent. Before any before/after or story appears anywhere, the code checks the matching
 active consent row.
 
+## 7b. Phase Two additions (auth, onboarding, health data)
+
+- **Auth behind an adapter.** `AuthService` has a dev/mock implementation (in-memory + AsyncStorage)
+  and a `SupabaseAuthService` selected only when `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY` are set, so dev
+  needs no secrets. Only the **anon** key ever reaches the client; sessions persist in AsyncStorage.
+  **Raw provider errors are never shown** — they map to friendly `AuthErrorCode`s.
+- **Health/safety data is the most sensitive tier.** `health_safety_flags` is **owner-only** at the
+  RLS layer (no co-challenger and no admin read policy), and sensitive body facts (sex, height) are
+  kept **off** the co-challenger-readable `profiles` row.
+- **Motivation & free-text answers are private** — stored in the owner-only draft / immutable
+  snapshot and **never** publicly exposed.
+- **Immutable snapshot.** `challenge_start_snapshots` blocks UPDATEs via a DB trigger; later profile
+  edits cannot rewrite research history.
+- **Analytics is separated from health data.** `AnalyticsService` payloads are typed to carry only
+  coarse product signals (step index, day number, booleans) — **never** weight, calories, motivation
+  text, or safety details. Product analytics and the primary health DB are distinct systems.
+- **No medical claims / no clearance.** Safety routing returns `SAFE_REVIEW_REQUIRED` and withholds
+  automated weight-loss targets; copy never implies medical clearance (see `docs/TARGET_ENGINE.md`).
+
 ## 8. Data-subject controls (designed for, phased in)
 
 - **Export**: a user can request their data (weights, logs, posts).

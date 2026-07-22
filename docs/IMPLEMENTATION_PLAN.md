@@ -1,8 +1,23 @@
 # Challenge42 — Implementation Plan
 
-> **Status:** Living document · **Phase:** 1 in progress
+> **Status:** Living document · **Phase:** 2 in progress (Phase 1 complete)
 > How we get from an empty repo to the product in [`PRODUCT_SPEC.md`](./PRODUCT_SPEC.md), one
 > reviewable vertical slice at a time.
+
+---
+
+## 0. Positioning update (Phase 2)
+
+The **initial** audience is now **busy parents of young children**. Working positioning:
+**“The 42-Day Parent Reset.”** Emotional core: _“You don’t need your old life back — you need a
+healthier version of your new one.”_
+
+This is a **positioning of the first challenge experience, not a hard-coding of the platform.** The
+schema, challenge system, onboarding engine, and target engine remain audience-agnostic; parent
+specifics live in **configuration and challenge content** (`packages/config`, the seeded
+`Founding Parent Reset` challenge, and onboarding step definitions) so future challenge types /
+audiences drop in without a rewrite. Design around **consistency, adaptability, and comebacks** — not
+perfect adherence. Copy never shames; “life happened, let’s adjust.”
 
 ---
 
@@ -53,19 +68,19 @@ Apps import from these via the `@challenge42/*` names (npm workspaces symlink).
 
 ## 4. Phase roadmap
 
-| Phase | Theme                                   | Key deliverables                                                                                                                |
-| ----- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **1** | **Foundation + Design + Home**          | Monorepo, docs, packages, initial schema+RLS, design tokens, 5-tab shell, **polished Home** on seed data, tests/lint/typecheck. |
-| 2     | Auth + Onboarding                       | Supabase Auth, profile creation, preference capture, conservative target calc.                                                  |
-| 3     | Weight + Calorie Tracking               | Real weigh-in & food logging, nutrition-provider adapter (USDA), Track screen.                                                  |
-| 4     | Challenges + Leaderboards + Teams       | Challenge lifecycle, scoring writes, leaderboards, team normalization, Live/leaderboard.                                        |
-| 5     | Realtime Activity Pulse + Workout Timer | Presence, live pulse, workout timer (`started_at`-based), cheers.                                                               |
-| 6     | Run/Walk Tracking + Map                 | GPS capture, run sessions, owner-only routes, privacy-safe map.                                                                 |
-| 7     | Community + Live Feed                   | Posts/comments/reactions, curated feed events, moderation hooks.                                                                |
-| 8     | Meal Plans + AI Personalization         | AI meal-plan generation (ideas), provider-verified macros, Plan screen, swaps.                                                  |
-| 9     | Success Gallery + Alumni                | Completion summaries, success stories, per-surface consent, "people like me".                                                   |
-| 10    | Admin + Notifications + Analytics       | Admin dashboards, expo-notifications delivery, at-risk detection, analytics.                                                    |
-| 11    | Polish + Testing + Production Hardening | E2E, perf, a11y pass, security hardening, store readiness.                                                                      |
+| Phase | Theme                                   | Key deliverables                                                                                                                                                                                                                                                                  |
+| ----- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Foundation + Design + Home**          | Monorepo, docs, packages, initial schema+RLS, design tokens, 5-tab shell, **polished Home** on seed data, tests/lint/typecheck.                                                                                                                                                   |
+| 2     | Auth + Parent Onboarding + Enrollment   | Supabase Auth (behind adapter), parent-focused onboarding engine + resume, safety screening/routing, deterministic Target Engine, challenge enrollment, immutable start snapshot, pilot baseline, Plan Reveal, personalized Home, profile/privacy, analytics + pilot foundations. |
+| 3     | Weight + Calorie Tracking               | Real weigh-in & food logging, nutrition-provider adapter (USDA), Track screen.                                                                                                                                                                                                    |
+| 4     | Challenges + Leaderboards + Teams       | Challenge lifecycle, scoring writes, leaderboards, team normalization, Live/leaderboard.                                                                                                                                                                                          |
+| 5     | Realtime Activity Pulse + Workout Timer | Presence, live pulse, workout timer (`started_at`-based), cheers.                                                                                                                                                                                                                 |
+| 6     | Run/Walk Tracking + Map                 | GPS capture, run sessions, owner-only routes, privacy-safe map.                                                                                                                                                                                                                   |
+| 7     | Community + Live Feed                   | Posts/comments/reactions, curated feed events, moderation hooks.                                                                                                                                                                                                                  |
+| 8     | Meal Plans + AI Personalization         | AI meal-plan generation (ideas), provider-verified macros, Plan screen, swaps.                                                                                                                                                                                                    |
+| 9     | Success Gallery + Alumni                | Completion summaries, success stories, per-surface consent, "people like me".                                                                                                                                                                                                     |
+| 10    | Admin + Notifications + Analytics       | Admin dashboards, expo-notifications delivery, at-risk detection, analytics.                                                                                                                                                                                                      |
+| 11    | Polish + Testing + Production Hardening | E2E, perf, a11y pass, security hardening, store readiness.                                                                                                                                                                                                                        |
 
 Order may shift when technical dependencies justify it (documented when it happens).
 
@@ -84,6 +99,52 @@ Order may shift when technical dependencies justify it (documented when it happe
    no dashboards yet.
 7. **Quality gates**: typecheck, lint, format check, and domain tests all pass. CI workflow added.
 8. **README** with local setup; engineering report.
+
+## 5b. Phase Two — task breakdown (Auth + Parent Onboarding)
+
+A new user goes: **open → create account → onboarding (“tell us about your life”) → join challenge →
+set baseline → receive personalized targets → Plan Reveal → personalized Home.**
+
+**Architecture principle (continues Phase One):** everything runs locally with **zero secrets**.
+Two seams make this possible and keep the real backend one config flip away:
+
+- **`AuthService`** interface with a **`MockAuthService`** (in-memory + `AsyncStorage`, dev default)
+  and a **`SupabaseAuthService`** (real, selected when `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY` are set).
+  Apple Sign In is anticipated by the interface (an `appleSignIn()` seam) but not implemented.
+- **`OnboardingRepository`** / **`EnrollmentRepository`** interfaces with `AsyncStorage`-backed dev
+  implementations and Supabase implementations for production. Onboarding draft + status persist so a
+  user resumes exactly where they left off.
+
+**Shared packages (framework-agnostic, tested):**
+
+- `config`: parent brand positioning, **onboarding step definitions** (data-driven), Target-Engine
+  constants + safety guardrails, analytics event names, `PILOT_MODE`/feature flags, version stamps
+  (`TARGET_ENGINE_VERSION`, `ONBOARDING_VERSION`, `CHALLENGE_RULES_VERSION`).
+- `types`: onboarding answers, household/food/activity prefs, safety flags, `TargetRecommendation`,
+  `ChallengeStartSnapshot`, analytics events, auth session/user.
+- `validation`: Zod for auth (email/password/reset) and each onboarding step; realistic goal-weight
+  guards.
+- `domain`: **`TargetRecommendationService`** (deterministic Mifflin-St Jeor + conservative
+  guardrails), **safety routing**, **goal-range** calculator, **snapshot builder**, **onboarding
+  engine** (next/prev/visible-step/progress/resume). Thoroughly unit-tested.
+
+**Database (additive migrations `0010–0012` + RLS `0013`):** `onboarding_progress`,
+`user_households`, `user_food_preferences`, `user_activity_preferences`, `health_safety_flags`,
+`challenge_start_snapshots` (immutable), `pilot_baseline_surveys`; extend `profiles` and
+`nutrition_targets` with the fields onboarding needs. New RLS is owner-only for all of these.
+
+**Mobile:** auth stack (welcome carousel + sign in/up/reset), a **data-driven onboarding engine**
+rendering one question per screen with subtle progress + back + save/resume, the **Plan Reveal**, a
+personalized **Home**, and **Profile/Settings + privacy controls**. `AnalyticsService` (dev logger)
+and `PILOT_MODE` foundation.
+
+**Target engine + safety** are documented in [`TARGET_ENGINE.md`](./TARGET_ENGINE.md). Safety
+categories (pregnant / recent-postpartum / breastfeeding / clinical-review / eating-disorder) return
+`SAFE_REVIEW_REQUIRED` and **never** get an automated weight-loss deficit.
+
+**Explicitly deferred:** calorie tracking, AI meal generation, USDA search, GPS, workout builder,
+live map, realtime presence, community posting, success gallery, complex leaderboards, push, admin
+analytics. Only interfaces/foundations are created where Phase Two needs them.
 
 ## 6. Testing strategy
 

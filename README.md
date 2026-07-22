@@ -57,6 +57,17 @@ npm run mobile         # Expo dev server — press i / a / w, or scan the QR in 
 npm run admin          # Next.js admin at http://localhost:3000
 ```
 
+## Try the Phase Two flow (auth → parent onboarding → plan)
+
+Runs with **zero secrets** on a dev auth mock. In the app: **Get started → Create account**
+(any email + an 8+ char password) → answer the one-question-per-screen onboarding → **See my plan**
+→ the “Your plan is ready” reveal → **Enter the challenge** → personalized Home. Close the app
+mid-onboarding and reopen — it **resumes** where you left off. Open the avatar (top-right of Home)
+for **Profile / privacy settings** and **Sign out**. To retest from scratch, sign out (clears the
+dev onboarding/profile) or clear the app’s storage. Wiring real Supabase Auth is a matter of setting
+`EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Target-engine rules live in
+[docs/TARGET_ENGINE.md](docs/TARGET_ENGINE.md).
+
 ## Quality gates
 
 ```bash

@@ -2,3 +2,8 @@ export * from './primitives';
 export * from './enums';
 export * from './models';
 export * from './home';
+export * from './onboarding';
+export * from './target';
+export * from './snapshot';
+export * from './auth';
+export * from './analytics';

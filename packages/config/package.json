@@ -15,5 +15,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@challenge42/types": "*"
   }
 }

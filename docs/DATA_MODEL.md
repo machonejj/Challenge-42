@@ -296,3 +296,24 @@ Migrations are timestamp-prefixed and additive. Phase One ships:
 
 > Phase One goal is a **coherent, reviewable foundation** — not every future column. Later phases add
 > columns/tables via new additive migrations rather than rewriting these.
+
+## 9. Migration plan (Phase Two — Auth + Parent Onboarding)
+
+Additive migrations `0010–0012`:
+
+10. `0010_onboarding_and_prefs.sql` — `onboarding_progress` (draft + resume), `user_households`,
+    `user_food_preferences`, `user_activity_preferences`, `health_safety_flags` (sensitive,
+    owner-only); adds `profiles.first_name`; extends `nutrition_targets` to hold the full current
+    recommendation and to allow a **null calorie target** for `SAFE_REVIEW_REQUIRED` users.
+11. `0011_challenge_snapshot_and_pilot.sql` — **`challenge_start_snapshots`** (immutable — a DB
+    trigger blocks all UPDATEs) and `pilot_baseline_surveys` (the pilot survey system's home).
+12. `0012_rls_phase2.sql` — owner-only RLS for all Phase Two tables; the snapshot allows owner+admin
+    read and owner insert-once, with no update/delete policy.
+
+**Design notes.** Sensitive body/safety data (sex, height, safety flags) is **not** placed on the
+co-challenger-readable `profiles` row — it lives in owner-only tables (`health_safety_flags`) and the
+immutable snapshot. `onboarding_progress.answers` is a jsonb draft for fast resume; on completion the
+app also writes the normalized `user_*` tables + the immutable snapshot. **Editing current
+preferences never mutates a historical `challenge_start_snapshot`** (enforced by the immutability
+trigger). Version stamps (`target_engine_version`, `onboarding_version`, `challenge_rules_version`)
+make every snapshot reproducible.

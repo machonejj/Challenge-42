@@ -82,9 +82,11 @@ export const CHEERS = ['🔥', '💪', '👏', '🚀'] as const;
 /** Map visibility modes (mirror `user_locations.visibility`). Exact GPS is never an option. */
 export const MAP_VISIBILITY = ['hidden', 'city', 'approximate'] as const;
 
-/** Feature flags — Phase One ships Home; the rest are architected but gated off. */
+/** Feature flags — enabled features ship; the rest are architected but gated off. */
 export const FEATURE_FLAGS = {
   home: true,
+  auth: true, // Phase 2
+  onboarding: true, // Phase 2
   liveLeaderboard: false,
   liveMap: false,
   liveFeed: false,
@@ -93,6 +95,20 @@ export const FEATURE_FLAGS = {
   community: false,
   successGallery: false,
   realtimePresence: false,
+} as const;
+
+/**
+ * Pilot / research mode. When on, the app can surface baseline + pulse + end-of-challenge surveys.
+ * Phase Two only lays the foundation (baseline is collected in onboarding); no survey UIs beyond it.
+ * Controlled by env so the pilot toggles without a code change.
+ */
+export const PILOT_MODE = {
+  enabled: (process.env.EXPO_PUBLIC_PILOT_MODE ?? 'true') === 'true',
+} as const;
+
+/** Analytics: dev logger by default; a real provider is wired later behind AnalyticsService. */
+export const ANALYTICS = {
+  provider: (process.env.EXPO_PUBLIC_ANALYTICS_PROVIDER ?? 'dev') as 'dev' | 'none' | 'remote',
 } as const;
 
 /**

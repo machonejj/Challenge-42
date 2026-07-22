@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { colors, spacing, layout } from '@challenge42/config';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, spacing, layout } from '@challenge42/config';
 import type { HomeSnapshot } from '@challenge42/types';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
 import { StatePlaceholder } from '@/components/ui/StatePlaceholder';
@@ -9,7 +11,6 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { ProgressRing } from '@/components/ui/ProgressRing';
-import { Pill } from '@/components/ui/Pill';
 import { ChallengeHeader } from '@/components/home/ChallengeHeader';
 import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
@@ -17,12 +18,19 @@ import { RankCard } from '@/components/home/RankCard';
 import { ActivityPulse } from '@/components/home/ActivityPulse';
 import { TeamStandingCard } from '@/components/home/TeamStandingCard';
 import { MealPlanPreview } from '@/components/home/MealPlanPreview';
-import { useHomeSnapshot } from '@/features/home/useHomeSnapshot';
+import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
+import { useProfileStore } from '@/features/profile/profileStore';
+import { getAnalytics } from '@/services/analytics/AnalyticsService';
 import { formatThousands } from '@/lib/format';
 
 export default function HomeScreen(): React.JSX.Element {
   const router = useRouter();
-  const { data, isLoading, isError, refetch, isRefetching } = useHomeSnapshot();
+  const { data, isLoading, isError, refetch, isRefetching } = usePersonalizedHome();
+  const safeReview = useProfileStore((s) => s.safetyStatus === 'SAFE_REVIEW_REQUIRED');
+
+  useEffect(() => {
+    if (data) getAnalytics().track('HOME_VIEWED', { dayNumber: data.challenge.dayNumber });
+  }, [data]);
 
   if (isLoading || !data) {
     return (
@@ -66,6 +74,15 @@ export default function HomeScreen(): React.JSX.Element {
         />
 
         <View style={styles.content}>
+          {safeReview ? (
+            <View style={styles.safeBanner}>
+              <Ionicons name="heart-outline" size={18} color={colors.status.positive} />
+              <Text variant="bodyMd" color="secondary" style={{ flex: 1 }}>
+                Your plan focuses on gentle consistency. We’re not setting a weight-loss target —
+                your situation deserves a more personalized approach.
+              </Text>
+            </View>
+          ) : null}
           <TodayBlock data={data} onQuick={(dest) => router.push(dest)} />
 
           <Section title="Your Challenge" style={styles.section}>
@@ -101,7 +118,7 @@ export default function HomeScreen(): React.JSX.Element {
 
           {data.isDemo ? (
             <Text variant="labelSm" color="tertiary" align="center" style={styles.demoNote}>
-              Development preview · demo data
+              Live activity, teams & meal plans are demo data for now
             </Text>
           ) : null}
         </View>
@@ -186,4 +203,13 @@ const styles = StyleSheet.create({
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
   quickRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   demoNote: { marginTop: spacing['3xl'] },
+  safeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(47, 143, 91, 0.06)',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
 });

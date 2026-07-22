@@ -30,6 +30,29 @@ export const brand = {
       'Challenge42 is a lifestyle and accountability program, not medical advice. ' +
       'Consult a qualified professional before starting any weight-loss or exercise plan.',
   },
+
+  /**
+   * Positioning of the INITIAL challenge experience. This is content/config — the platform itself
+   * stays audience-agnostic so future challenge types drop in without a rewrite.
+   */
+  positioning: {
+    id: 'parent_reset',
+    name: 'The 42-Day Parent Reset',
+    audience: 'Busy parents of young children',
+    promise: 'You don’t need your old life back. You need a healthier version of your new one.',
+    principles: ['Consistency', 'Adaptability', 'Comebacks', 'Real family life'],
+  },
+} as const;
+
+/**
+ * The seeded challenge new users enroll into during the pilot. Dates are configurable/overridable;
+ * membership + snapshot are stored separately from the mutable profile.
+ */
+export const FOUNDING_CHALLENGE = {
+  id: 'c0000000-0000-4000-a000-00000000FEED',
+  slug: 'founding-parent-reset',
+  name: 'Founding Parent Reset',
+  lengthDays: 42,
 } as const;
 
 export type Brand = typeof brand;
