@@ -8,6 +8,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { brand, colors, spacing } from '@challenge42/config';
 import { queryClient } from '@/lib/queryClient';
 import { Text } from '@/components/ui/Text';
+import { isSupabaseConfigured } from '@/services/supabase/client';
+import { startCloudSync, stopCloudSync } from '@/services/sync/cloudSync';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
@@ -32,6 +34,7 @@ function RootNavigator(): React.JSX.Element {
   const segments = useSegments();
   const restore = useAuthStore((s) => s.restore);
   const authStatus = useAuthStore((s) => s.status);
+  const userId = useAuthStore((s) => s.session?.user.id ?? null);
   const onbHydrated = useOnboardingStore((s) => s.hydrated);
   const onbStatus = useOnboardingStore((s) => s.status);
   const profileHydrated = useProfileStore((s) => s.hydrated);
@@ -43,6 +46,16 @@ function RootNavigator(): React.JSX.Element {
       });
     });
   }, [restore]);
+
+  // Cross-device sync: pull on sign-in, push on change (only when Supabase is configured).
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    if (authStatus === 'signedIn' && userId) {
+      void startCloudSync(userId);
+      return () => stopCloudSync();
+    }
+    return undefined;
+  }, [authStatus, userId]);
 
   const ready = authStatus !== 'restoring' && onbHydrated && profileHydrated;
 

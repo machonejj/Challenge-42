@@ -11,13 +11,18 @@ const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url as string, anonKey as string, {
-      auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-      },
-    })
-  : null;
+// Only instantiate in a real browser / native runtime. During web static rendering (Node, no
+// `window`), the client's session storage would touch `window`/localStorage and crash the export.
+const canUseStorage = typeof window !== 'undefined';
+
+export const supabase: SupabaseClient | null =
+  isSupabaseConfigured && canUseStorage
+    ? createClient(url as string, anonKey as string, {
+        auth: {
+          storage: AsyncStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
+      })
+    : null;

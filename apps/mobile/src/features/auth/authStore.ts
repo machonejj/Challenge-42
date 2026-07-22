@@ -56,6 +56,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ busy: true, error: null });
     const res = await auth.signUp(email, password);
     if (res.ok && res.session) {
+      // A brand-new account starts clean — never inherit leftover local data from a prior user.
+      useOnboardingStore.getState().reset();
+      useProfileStore.getState().reset();
+      useWeightStore.getState().reset();
+      useFoodLogStore.getState().reset();
+      useActivityStore.getState().reset();
       analytics.track('ACCOUNT_CREATED', { method: 'email' });
       set({ session: res.session, status: 'signedIn', busy: false });
       return true;
