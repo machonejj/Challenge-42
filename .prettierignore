@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.next
+out
+coverage
+.expo
+*.tsbuildinfo
+package-lock.json
+supabase/migrations

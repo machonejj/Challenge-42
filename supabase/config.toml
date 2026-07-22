@@ -1,0 +1,32 @@
+# Challenge42 — Supabase local config (supabase CLI).
+# Run `supabase start` to boot a local stack, then `supabase db reset` to apply migrations + seed.
+project_id = "challenge42"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+# Email auth for dev; production configures providers via the dashboard/secrets, never in git.
+[auth.email]
+enable_signup = true
+
+[storage]
+enabled = true
+# Buckets are private by default; sensitive media (progress photos, success media) uses signed URLs.
+
+[realtime]
+enabled = true

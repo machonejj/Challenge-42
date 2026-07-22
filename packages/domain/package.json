@@ -1,0 +1,23 @@
+{
+  "name": "@challenge42/domain",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure business logic: scoring, streaks, weight stats, challenge math, nutrition providers.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@challenge42/config": "*",
+    "@challenge42/types": "*"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "challenge42",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Challenge42 — a premium 42-day weight-loss & healthy-lifestyle challenge platform (working name).",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build:packages": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:packages": "npm run typecheck --workspace packages/config --workspace packages/types --workspace packages/validation --workspace packages/domain",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:packages": "vitest run packages",
+    "mobile": "npm run start --workspace apps/mobile",
+    "admin": "npm run dev --workspace apps/admin",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.24.0",
+    "vitest": "^3.0.0"
+  }
+}
