@@ -36,11 +36,11 @@ export const brand = {
    * stays audience-agnostic so future challenge types drop in without a rewrite.
    */
   positioning: {
-    id: 'parent_reset',
-    name: 'The 42-Day Parent Reset',
-    audience: 'Busy parents of young children',
-    promise: 'You don’t need your old life back. You need a healthier version of your new one.',
-    principles: ['Consistency', 'Adaptability', 'Comebacks', 'Real family life'],
+    id: 'reset',
+    name: 'The 42-Day Reset',
+    audience: 'Anyone ready for a healthier restart',
+    promise: 'Six weeks to build habits that actually stick — around the life you already have.',
+    principles: ['Consistency', 'Adaptability', 'Comebacks', 'Real life'],
   },
 } as const;
 
@@ -50,8 +50,8 @@ export const brand = {
  */
 export const FOUNDING_CHALLENGE = {
   id: 'c0000000-0000-4000-a000-00000000FEED',
-  slug: 'founding-parent-reset',
-  name: 'Founding Parent Reset',
+  slug: 'founding-42-reset',
+  name: 'Founding 42 Reset',
   lengthDays: 42,
 } as const;
 

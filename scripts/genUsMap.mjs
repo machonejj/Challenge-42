@@ -1,7 +1,7 @@
 /**
  * Regenerate apps/mobile/src/features/live/usMapData.ts — accurate continental-US state borders
- * (Albers-USA, AK/HI insets) plus demo-city coordinates projected through the SAME projection so the
- * presence dots land on the right cities.
+ * (Albers-USA, AK/HI insets) plus per-state centroids (STATE_XY) projected through the SAME
+ * projection, so a real challenger's location dot lands on their state.
  *
  * Usage (from repo root):
  *   npm i --no-save d3-geo topojson-client
@@ -11,11 +11,66 @@
  */
 import { writeFileSync } from 'node:fs';
 import * as topojson from 'topojson-client';
-import { geoAlbersUsa, geoPath } from 'd3-geo';
+import { geoAlbersUsa, geoPath, geoCentroid } from 'd3-geo';
 
 const TOPO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
 const W = 960;
 const H = 600;
+
+// Full state name → USPS 2-letter code (matches the code stored on the profile).
+const NAME_TO_ABBR = {
+  Alabama: 'AL',
+  Alaska: 'AK',
+  Arizona: 'AZ',
+  Arkansas: 'AR',
+  California: 'CA',
+  Colorado: 'CO',
+  Connecticut: 'CT',
+  Delaware: 'DE',
+  'District of Columbia': 'DC',
+  Florida: 'FL',
+  Georgia: 'GA',
+  Hawaii: 'HI',
+  Idaho: 'ID',
+  Illinois: 'IL',
+  Indiana: 'IN',
+  Iowa: 'IA',
+  Kansas: 'KS',
+  Kentucky: 'KY',
+  Louisiana: 'LA',
+  Maine: 'ME',
+  Maryland: 'MD',
+  Massachusetts: 'MA',
+  Michigan: 'MI',
+  Minnesota: 'MN',
+  Mississippi: 'MS',
+  Missouri: 'MO',
+  Montana: 'MT',
+  Nebraska: 'NE',
+  Nevada: 'NV',
+  'New Hampshire': 'NH',
+  'New Jersey': 'NJ',
+  'New Mexico': 'NM',
+  'New York': 'NY',
+  'North Carolina': 'NC',
+  'North Dakota': 'ND',
+  Ohio: 'OH',
+  Oklahoma: 'OK',
+  Oregon: 'OR',
+  Pennsylvania: 'PA',
+  'Rhode Island': 'RI',
+  'South Carolina': 'SC',
+  'South Dakota': 'SD',
+  Tennessee: 'TN',
+  Texas: 'TX',
+  Utah: 'UT',
+  Vermont: 'VT',
+  Virginia: 'VA',
+  Washington: 'WA',
+  'West Virginia': 'WV',
+  Wisconsin: 'WI',
+  Wyoming: 'WY',
+};
 
 const topo = await fetch(TOPO_URL).then((r) => r.json());
 const states = topojson.feature(topo, topo.objects.states);
@@ -25,26 +80,17 @@ const path = geoPath(proj);
 const roundPath = (d) => (d ? d.replace(/-?\d+\.?\d*/g, (n) => Math.round(parseFloat(n))) : '');
 const statePaths = states.features.map((f) => roundPath(path(f))).filter(Boolean);
 
-// Demo members → real [lon, lat]. Add cities here as the seed grows.
-const cities = {
-  p1: [-118.12, 34.58], // Palmdale
-  p2: [-97.74, 30.27], // Austin
-  p3: [-104.99, 39.74], // Denver
-  p4: [-122.68, 45.52], // Portland
-  p5: [-87.63, 41.88], // Chicago
-  p6: [-80.19, 25.76], // Miami
-  p7: [-71.06, 42.36], // Boston
-  p8: [-122.33, 47.61], // Seattle
-  p9: [-86.78, 36.16], // Nashville
-  p10: [-84.39, 33.75], // Atlanta
-  p11: [-117.16, 32.72], // San Diego
-  p12: [-74.0, 40.71], // New York
-};
-const cityXY = {};
-for (const [id, lnglat] of Object.entries(cities)) {
-  const p = proj(lnglat);
+// Per-state centroid, projected and normalized to 0–1, keyed by USPS code.
+const stateXY = {};
+for (const f of states.features) {
+  const abbr = NAME_TO_ABBR[f.properties.name];
+  if (!abbr) continue;
+  const p = proj(geoCentroid(f));
   if (p)
-    cityXY[id] = { x: Math.round((p[0] / W) * 1e4) / 1e4, y: Math.round((p[1] / H) * 1e4) / 1e4 };
+    stateXY[abbr] = {
+      x: Math.round((p[0] / W) * 1e4) / 1e4,
+      y: Math.round((p[1] / H) * 1e4) / 1e4,
+    };
 }
 
 const out =
@@ -52,7 +98,10 @@ const out =
   `// Accurate continental-US state borders (AK/HI as insets), projected to a ${W}×${H} viewBox.\n` +
   `export const US_VIEWBOX = '0 0 ${W} ${H}';\n` +
   `export const US_STATE_PATHS: readonly string[] = ${JSON.stringify(statePaths)};\n` +
-  `export const CITY_XY: Record<string, { x: number; y: number }> = ${JSON.stringify(cityXY)};\n`;
+  `// State centroid (0–1 of the viewBox) keyed by USPS code — where a challenger's dot lands.\n` +
+  `export const STATE_XY: Record<string, { x: number; y: number }> = ${JSON.stringify(stateXY)};\n`;
 
 writeFileSync(new URL('../apps/mobile/src/features/live/usMapData.ts', import.meta.url), out);
-console.log(`Wrote usMapData.ts — ${statePaths.length} states, ${out.length} bytes.`);
+console.log(
+  `Wrote usMapData.ts — ${statePaths.length} states, ${Object.keys(stateXY).length} centroids, ${out.length} bytes.`,
+);

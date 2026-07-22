@@ -21,7 +21,7 @@ const RISK_LABELS: Record<FalloffTrigger, string> = {
   stress: 'Stress',
   poor_sleep: 'Poor sleep',
   work: 'Work',
-  kids: 'Busy days with the kids',
+  kids: 'Busy days',
   travel: 'Travel',
   hunger: 'Hunger',
   motivation: 'Motivation dips',
@@ -101,7 +101,6 @@ export default function PlanReveal(): React.JSX.Element | null {
   const goalKg = answers.goalWeightKg;
 
   const planTags: string[] = [];
-  if (answers.sameMealForFamily) planTags.push('Family-friendly');
   if (answers.cookTimePref === 'under_15' || answers.cookTimePref === '15_30')
     planTags.push('Under 30 minutes');
   else if (answers.cookTimePref === '30_45') planTags.push('Under 45 minutes');

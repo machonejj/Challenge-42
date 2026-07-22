@@ -24,8 +24,8 @@ const SLIDES: Slide[] = [
   },
   {
     eyebrow: 'BUILT FOR REAL LIFE',
-    title: 'Made for\nfamily life.',
-    body: 'Meals your family can eat. Workouts that fit your schedule. People doing it with you.',
+    title: 'Made for\nreal life.',
+    body: 'Simple meals. Workouts that fit your schedule. People doing it right alongside you.',
     cta: 'Continue',
   },
   {

@@ -1,5 +1,5 @@
 /**
- * Data-driven onboarding step definitions — the ordered list of questions. Parent-focused *content*
+ * Data-driven onboarding step definitions — the ordered list of questions. All question *content*
  * lives here; the engine (packages/domain) and screens (mobile) stay generic. Reorder/add a question
  * by editing this array. One primary question per screen; sensitive steps carry reassurance copy.
  *
@@ -73,37 +73,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
     required: false,
   },
 
-  // ---- B. Parent / household ----------------------------------------------------------------
-  {
-    id: 'isParent',
-    section: 'household',
-    kind: 'boolean',
-    key: 'isParent',
-    title: 'Are you a parent or caregiver?',
-    subtitle: 'This challenge is built around real family life.',
-    required: true,
-  },
-  {
-    id: 'childAgeBands',
-    section: 'household',
-    kind: 'multi_select',
-    key: 'childAgeBands',
-    title: 'What are their ages?',
-    subtitle: 'Select all that apply.',
-    options: [
-      { value: 'baby_under_1', label: 'Baby under 1', emoji: '👶' },
-      { value: 'age_1_2', label: '1–2' },
-      { value: 'age_3_5', label: '3–5' },
-      { value: 'age_6_9', label: '6–9' },
-      { value: 'age_10_13', label: '10–13' },
-      { value: 'teen', label: 'Teen' },
-      { value: 'adult_children', label: 'Adult children' },
-      { value: 'other', label: 'Other' },
-    ],
-    minSelect: 1,
-    required: true,
-    condition: (a) => a.isParent === true,
-  },
+  // ---- B. Household -------------------------------------------------------------------------
   {
     id: 'cookForCount',
     section: 'household',
@@ -127,7 +97,6 @@ export const ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
     subtitle: 'Pick the real ones — no judgment.',
     options: [
       { value: 'no_time', label: 'No time' },
-      { value: 'picky_kids', label: 'Kids are picky' },
       { value: 'eating_out', label: 'Eating out' },
       { value: 'work_schedule', label: 'Work schedule' },
       { value: 'grocery_cost', label: 'Grocery cost' },
@@ -167,7 +136,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
     key: 'motivation',
     title: 'Why does this matter to you right now?',
     subtitle: 'Optional, and private. We’ll save it and show it back to you when it’s hard.',
-    placeholder: 'e.g. “I want more energy for my kids.”',
+    placeholder: 'e.g. “I want more energy day to day.”',
     required: false,
   },
 
@@ -184,7 +153,6 @@ export const ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
       { value: 'stress', label: 'Stress' },
       { value: 'poor_sleep', label: 'Poor sleep' },
       { value: 'work', label: 'Work' },
-      { value: 'kids', label: 'Kids' },
       { value: 'travel', label: 'Travel' },
       { value: 'hunger', label: 'Hunger' },
       { value: 'motivation', label: 'Lack of motivation' },
@@ -241,15 +209,6 @@ export const ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
       { value: 'somewhat', label: 'Somewhat important' },
       { value: 'flexible', label: 'Flexible' },
     ],
-    required: true,
-  },
-  {
-    id: 'sameMealForFamily',
-    section: 'food',
-    kind: 'boolean',
-    key: 'sameMealForFamily',
-    title: 'Want meals your whole family can eat?',
-    subtitle: 'Most parents say yes — no cooking two dinners.',
     required: true,
   },
 

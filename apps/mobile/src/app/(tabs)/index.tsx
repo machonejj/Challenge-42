@@ -14,8 +14,6 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ChallengeHeader } from '@/components/home/ChallengeHeader';
 import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
-import { RankCard } from '@/components/home/RankCard';
-import { ActivityPulse } from '@/components/home/ActivityPulse';
 import { MealPlanPreview } from '@/components/home/MealPlanPreview';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
 import { useProfileStore } from '@/features/profile/profileStore';
@@ -84,37 +82,6 @@ export default function HomeScreen(): React.JSX.Element {
           ) : null}
           <TodayBlock data={data} onQuick={(dest) => router.push(dest)} />
 
-          <Section title="Your Challenge" style={styles.section}>
-            <RankCard rank={data.rank} />
-          </Section>
-
-          <Section
-            title="Happening Now"
-            actionLabel="See Live"
-            onAction={() => router.push('/live')}
-            style={styles.section}
-          >
-            <ActivityPulse pulse={data.pulse} onCheer={() => {}} />
-          </Section>
-
-          <Section title="Together" style={styles.section}>
-            <Card>
-              <View style={styles.collectiveRow}>
-                <View style={styles.collectiveIcon}>
-                  <Ionicons name="people-outline" size={22} color={colors.brand.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text variant="displayMd" color="gold">
-                    {formatThousands(data.collectiveLostLb)} lbs
-                  </Text>
-                  <Text variant="labelMd" color="secondary">
-                    lost by {formatThousands(data.challengerCount)} challengers together
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </Section>
-
           <Section
             title="Today's Plan"
             actionLabel="View Plan"
@@ -126,7 +93,7 @@ export default function HomeScreen(): React.JSX.Element {
 
           {data.isDemo ? (
             <Text variant="labelSm" color="tertiary" align="center" style={styles.demoNote}>
-              Live activity & meal plans are demo data for now
+              Meal plans are a preview for now
             </Text>
           ) : null}
         </View>
@@ -215,15 +182,6 @@ const styles = StyleSheet.create({
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
   quickRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   demoNote: { marginTop: spacing['3xl'] },
-  collectiveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  collectiveIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(201, 166, 91, 0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   safeBanner: {
     flexDirection: 'row',
     alignItems: 'center',

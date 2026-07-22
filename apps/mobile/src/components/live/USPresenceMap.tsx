@@ -3,7 +3,7 @@ import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors, radius } from '@challenge42/config';
 import { LiveDot } from '@/components/ui/LiveDot';
-import type { PresenceDot } from '@/features/live/mockPresence';
+import type { PresenceDot } from '@/features/live/community';
 import { US_STATE_PATHS, US_VIEWBOX } from '@/features/live/usMapData';
 
 // Accurate continental-US map (state borders, Albers-USA) in a 960×600 viewBox. Dots are projected
@@ -34,20 +34,17 @@ export function USPresenceMap({ dots }: { dots: readonly PresenceDot[] }): React
       </Svg>
 
       {size.w > 0
-        ? dots.map((d) => {
-            const posted = Boolean(d.submission);
-            return (
-              <View
-                key={d.id}
-                style={[styles.dotWrap, { left: d.x * size.w - 10, top: d.y * size.h - 10 }]}
-                accessibilityLabel={`${d.name}, ${d.city} — ${d.online ? 'online' : 'offline'}`}
-              >
-                <View style={[styles.ring, posted && styles.ringPosted]}>
-                  {d.online ? <LiveDot size={10} /> : <View style={styles.offline} />}
-                </View>
+        ? dots.map((d) => (
+            <View
+              key={d.id}
+              style={[styles.dotWrap, { left: d.x * size.w - 10, top: d.y * size.h - 10 }]}
+              accessibilityLabel={`${d.name}, ${d.city} — ${d.online ? 'active today' : 'resting'}`}
+            >
+              <View style={styles.ring}>
+                {d.online ? <LiveDot size={10} /> : <View style={styles.offline} />}
               </View>
-            );
-          })
+            </View>
+          ))
         : null}
     </View>
   );
