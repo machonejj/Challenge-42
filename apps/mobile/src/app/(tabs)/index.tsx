@@ -140,7 +140,7 @@ function TodayBlock({
   onQuick,
 }: {
   data: HomeSnapshot;
-  onQuick: (dest: '/track' | '/live' | '/weigh-in') => void;
+  onQuick: (dest: '/track' | '/live' | '/weigh-in' | '/activity') => void;
 }) {
   const { today } = data;
   const scoreProgress = today.score / today.scoreMax;
@@ -193,7 +193,11 @@ function TodayBlock({
           onPress={() => onQuick('/track')}
         />
         <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/weigh-in')} />
-        <QuickAction icon="play-outline" label="Start Activity" onPress={() => onQuick('/live')} />
+        <QuickAction
+          icon="play-outline"
+          label="Start Activity"
+          onPress={() => onQuick('/activity')}
+        />
       </View>
     </Section>
   );
