@@ -20,33 +20,42 @@ function LegendItem({ swatch, label }: { swatch: React.ReactNode; label: string 
   );
 }
 
-export default function LiveScreen(): React.JSX.Element {
+export default function LeaderboardScreen(): React.JSX.Element {
   const { rows, dots, onlineCount, totalCount, isReal } = useCommunity();
-
-  const presence =
-    totalCount === 0
-      ? 'Enroll and weigh in to appear on the board.'
-      : isReal
-        ? `${onlineCount} of ${totalCount} challengers active today.`
-        : "You're on the board. As challengers join, they'll appear here.";
 
   return (
     <>
       <StatusBar style="dark" />
       <ScreenScaffold>
         <Text variant="labelSm" color="gold">
-          LIVE
+          LEADERBOARD
         </Text>
         <Text variant="titleLg" style={styles.title}>
-          The challenge, live
+          Ranked by % of body weight
         </Text>
         <Text variant="bodyMd" color="secondary" style={styles.subtitle}>
-          {presence} Locations are approximate — state-level only.
+          Everyone competes on equal footing — percentage, never raw pounds. The healthy way to
+          compete.
         </Text>
 
-        <Card style={styles.mapCard}>
-          <Text variant="labelSm" color="tertiary" style={styles.mapTitle}>
-            WHERE CHALLENGERS ARE
+        <View style={styles.board}>
+          <Leaderboard rows={rows} />
+        </View>
+
+        {!isReal && totalCount <= 1 ? (
+          <Text variant="labelSm" color="tertiary" align="center" style={styles.note}>
+            As challengers join and sync, they’ll appear on the board.
+          </Text>
+        ) : null}
+
+        <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
+          WHERE CHALLENGERS ARE
+        </Text>
+        <Card>
+          <Text variant="bodyMd" color="secondary" style={styles.mapCaption}>
+            {totalCount === 0
+              ? 'Enroll and weigh in to appear on the map.'
+              : `${onlineCount} of ${totalCount} active today · state-level only.`}
           </Text>
           <View style={styles.mapWrap}>
             <USPresenceMap dots={dots} />
@@ -56,27 +65,6 @@ export default function LiveScreen(): React.JSX.Element {
             <LegendItem swatch={<View style={styles.offlineSwatch} />} label="Resting" />
           </View>
         </Card>
-
-        <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
-          LEADERBOARD
-        </Text>
-        <Text variant="titleMd" style={styles.lbTitle}>
-          Ranked by % of body weight
-        </Text>
-        <Text variant="bodyMd" color="secondary" style={styles.lbBlurb}>
-          Everyone competes on equal footing — percentage, never raw pounds. The healthy way to
-          compete.
-        </Text>
-
-        <View style={styles.lbWrap}>
-          <Leaderboard rows={rows} />
-        </View>
-
-        {!isReal ? (
-          <Text variant="labelSm" color="tertiary" align="center" style={styles.note}>
-            More challengers appear here as they join and sync.
-          </Text>
-        ) : null}
       </ScreenScaffold>
     </>
   );
@@ -85,8 +73,10 @@ export default function LiveScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   title: { marginTop: spacing.xs },
   subtitle: { marginTop: spacing.sm },
-  mapCard: { marginTop: spacing.xl },
-  mapTitle: { marginBottom: spacing.md },
+  board: { marginTop: spacing.xl },
+  note: { marginTop: spacing.lg },
+  sectionLabel: { marginTop: spacing['2xl'], marginBottom: spacing.sm },
+  mapCaption: { marginBottom: spacing.md },
   mapWrap: { alignItems: 'center' },
   legend: {
     flexDirection: 'row',
@@ -102,9 +92,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.text.tertiary,
   },
-  sectionLabel: { marginTop: spacing['2xl'] },
-  lbTitle: { marginTop: spacing.xs },
-  lbBlurb: { marginTop: spacing.xs },
-  lbWrap: { marginTop: spacing.lg },
-  note: { marginTop: spacing.xl },
 });

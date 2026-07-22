@@ -11,6 +11,7 @@ import { useProfileStore } from '@/features/profile/profileStore';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useWeightStore } from '@/features/tracking/weightStore';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
+import { useStepsStore } from '@/features/tracking/stepsStore';
 import { useActivityStore } from '@/features/activity/activityStore';
 
 interface AppStateBlob {
@@ -19,6 +20,7 @@ interface AppStateBlob {
   onboarding?: Record<string, unknown>;
   weight?: Record<string, unknown>;
   food?: Record<string, unknown>;
+  steps?: Record<string, unknown>;
   activity?: Record<string, unknown>;
 }
 
@@ -27,6 +29,7 @@ function collectState(): AppStateBlob {
   const o = useOnboardingStore.getState();
   const w = useWeightStore.getState();
   const f = useFoodLogStore.getState();
+  const st = useStepsStore.getState();
   const a = useActivityStore.getState();
   return {
     v: 1,
@@ -36,6 +39,7 @@ function collectState(): AppStateBlob {
       displayName: p.displayName,
       city: p.city,
       state: p.state,
+      avatarUrl: p.avatarUrl,
       weightUnit: p.weightUnit,
       challengeId: p.challengeId,
       challengeName: p.challengeName,
@@ -50,6 +54,7 @@ function collectState(): AppStateBlob {
     onboarding: { answers: o.answers, currentStepId: o.currentStepId, status: o.status },
     weight: { entries: w.entries },
     food: { entries: f.entries },
+    steps: { entries: st.entries },
     activity: { sessions: a.sessions },
   };
 }
@@ -59,6 +64,7 @@ function hydrate(blob: AppStateBlob): void {
   if (blob.onboarding) useOnboardingStore.setState(blob.onboarding as never);
   if (blob.weight) useWeightStore.setState(blob.weight as never);
   if (blob.food) useFoodLogStore.setState(blob.food as never);
+  if (blob.steps) useStepsStore.setState(blob.steps as never);
   if (blob.activity) useActivityStore.setState(blob.activity as never);
 }
 
@@ -119,6 +125,7 @@ export async function startCloudSync(userId: string): Promise<void> {
     useOnboardingStore,
     useWeightStore,
     useFoodLogStore,
+    useStepsStore,
     useActivityStore,
   ];
   unsubscribers = stores.map((s) => s.subscribe(() => schedulePush(userId)));

@@ -1,4 +1,5 @@
 import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { colors, radius } from '@challenge42/config';
 import { Text } from './Text';
 
@@ -14,18 +15,30 @@ export interface AvatarProps {
   name: string;
   size?: number;
   tone?: 'pine' | 'gold';
+  /** Optional face photo. Falls back to initials when absent. */
+  uri?: string | null;
 }
 
-/** Initials avatar. (Phase One seed uses no photos; real images arrive via expo-image later.) */
-export function Avatar({ name, size = 40, tone = 'pine' }: AvatarProps): React.JSX.Element {
+/** Face-photo avatar with an initials fallback. */
+export function Avatar({ name, size = 40, tone = 'pine', uri }: AvatarProps): React.JSX.Element {
   const bg = tone === 'gold' ? colors.brand.gold : colors.surface.pineElevated;
   const fg = tone === 'gold' ? colors.text.onGold : colors.text.onPine;
+  const dims = { width: size, height: size, borderRadius: radius.pill };
+
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={[styles.base, dims]}
+        contentFit="cover"
+        transition={150}
+        accessibilityLabel={`${name} photo`}
+      />
+    );
+  }
   return (
     <View
-      style={[
-        styles.base,
-        { width: size, height: size, borderRadius: radius.pill, backgroundColor: bg },
-      ]}
+      style={[styles.base, dims, { backgroundColor: bg }]}
       accessibilityLabel={`${name} avatar`}
     >
       <Text style={{ color: fg, fontSize: size * 0.36, fontWeight: '700' }}>{initials(name)}</Text>
@@ -34,5 +47,5 @@ export function Avatar({ name, size = 40, tone = 'pine' }: AvatarProps): React.J
 }
 
 const styles = StyleSheet.create({
-  base: { alignItems: 'center', justifyContent: 'center' },
+  base: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface.sunken },
 });

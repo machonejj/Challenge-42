@@ -6,6 +6,7 @@ import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useWeightStore } from '@/features/tracking/weightStore';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
+import { useStepsStore } from '@/features/tracking/stepsStore';
 import { useActivityStore } from '@/features/activity/activityStore';
 
 export type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
@@ -61,6 +62,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       useProfileStore.getState().reset();
       useWeightStore.getState().reset();
       useFoodLogStore.getState().reset();
+      useStepsStore.getState().reset();
       useActivityStore.getState().reset();
       analytics.track('ACCOUNT_CREATED', { method: 'email' });
       set({ session: res.session, status: 'signedIn', busy: false });

@@ -22,6 +22,7 @@ import { TextField } from '@/components/ui/TextField';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useAccessStore } from '@/features/admin/accessStore';
+import { pickImageFile, uploadImage, canPickImage } from '@/features/media/imageUpload';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
 
 function Segmented<T extends string>({
@@ -74,8 +75,20 @@ export default function ProfileScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const store = useProfileStore();
   const signOut = useAuthStore((s) => s.signOut);
+  const userId = useAuthStore((s) => s.session?.user.id ?? null);
   const isAdmin = useAccessStore((s) => s.isAdmin);
   const analytics = getAnalytics();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
+  const changePhoto = async (): Promise<void> => {
+    if (!userId) return;
+    const file = await pickImageFile();
+    if (!file) return;
+    setAvatarBusy(true);
+    const url = await uploadImage('avatars', userId, file);
+    if (url) store.updatePreferences({ avatarUrl: url });
+    setAvatarBusy(false);
+  };
 
   const [displayName, setDisplayName] = useState(store.displayName ?? store.firstName ?? '');
   const [city, setCity] = useState(store.city ?? '');
@@ -132,11 +145,23 @@ export default function ProfileScreen(): React.JSX.Element {
         </View>
 
         <Card style={styles.identity}>
-          <Avatar name={displayName || 'You'} size={56} tone="gold" />
+          <Pressable
+            onPress={canPickImage() ? changePhoto : undefined}
+            disabled={avatarBusy || !canPickImage()}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+          >
+            <Avatar name={displayName || 'You'} size={56} tone="gold" uri={store.avatarUrl} />
+            {canPickImage() ? (
+              <View style={styles.camBadge}>
+                <Ionicons name="camera" size={12} color={colors.text.onPine} />
+              </View>
+            ) : null}
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text variant="titleMd">{displayName || 'You'}</Text>
             <Text variant="bodyMd" color="secondary">
-              {store.challengeName ?? 'Not enrolled yet'}
+              {avatarBusy ? 'Uploading photo…' : (store.challengeName ?? 'Not enrolled yet')}
             </Text>
           </View>
         </Card>
@@ -312,6 +337,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  camBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brand.pine,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.surface.card,
+  },
   sectionLabel: { marginTop: spacing['2xl'], marginBottom: spacing.sm },
   settingBlock: {},
   segmented: {

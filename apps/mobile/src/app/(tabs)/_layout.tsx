@@ -41,13 +41,13 @@ export default function TabsLayout(): React.JSX.Element {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home') }} />
-      <Tabs.Screen name="live" options={{ title: 'Live', tabBarIcon: tabIcon('pulse') }} />
       <Tabs.Screen name="track" options={{ title: 'Track', tabBarIcon: tabIcon('stats-chart') }} />
-      <Tabs.Screen name="plan" options={{ title: 'Plan', tabBarIcon: tabIcon('restaurant') }} />
       <Tabs.Screen
         name="community"
-        options={{ title: 'Community', tabBarIcon: tabIcon('people') }}
+        options={{ title: 'Community', tabBarIcon: tabIcon('restaurant') }}
       />
+      <Tabs.Screen name="live" options={{ title: 'Leaderboard', tabBarIcon: tabIcon('trophy') }} />
+      <Tabs.Screen name="plan" options={{ href: null }} />
     </Tabs>
   );
 }

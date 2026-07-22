@@ -38,6 +38,7 @@ export interface EditablePreferences {
   city: string | null;
   state: string | null;
   weightUnit: WeightUnit;
+  avatarUrl: string | null;
 }
 
 interface ProfileState {
@@ -47,6 +48,7 @@ interface ProfileState {
   displayName: string | null;
   city: string | null;
   state: string | null;
+  avatarUrl: string | null;
   weightUnit: WeightUnit;
   challengeId: string | null;
   challengeName: string | null;
@@ -72,6 +74,7 @@ const initial = {
   displayName: null,
   city: null,
   state: null,
+  avatarUrl: null,
   weightUnit: 'lb' as WeightUnit,
   challengeId: null,
   challengeName: null,

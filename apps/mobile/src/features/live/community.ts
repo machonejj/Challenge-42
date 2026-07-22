@@ -9,6 +9,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { supabase } from '@/services/supabase/client';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { useFoodLogStore } from '@/features/tracking/foodLogStore';
+import { useStepsStore, totalSteps } from '@/features/tracking/stepsStore';
 import { STATE_XY } from './usMapData';
 
 export interface LeaderRow {
@@ -16,6 +18,7 @@ export interface LeaderRow {
   rank: number;
   name: string;
   state: string | null;
+  avatarUrl: string | null;
   pctLost: number; // % of body weight lost (negative = gained)
   activeRecent: boolean;
   isCurrentUser: boolean;
@@ -36,6 +39,7 @@ interface RpcRow {
   user_id: string;
   display_name: string;
   state: string | null;
+  avatar_url: string | null;
   pct_lost: number;
   active_recent: boolean;
 }
@@ -149,6 +153,7 @@ export function useCommunity(): Community {
       enrolled: s.enrolled,
       firstName: s.firstName,
       state: s.state,
+      avatarUrl: s.avatarUrl,
       startWeightKg: s.startWeightKg,
       latestWeightKg: s.latestWeightKg,
     })),
@@ -177,6 +182,7 @@ export function useCommunity(): Community {
           rank: 1,
           name: profile.firstName ?? 'You',
           state: normalizeState(profile.state),
+          avatarUrl: profile.avatarUrl ?? null,
           pctLost: pctLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
           activeRecent: true,
           isCurrentUser: true,
@@ -191,6 +197,7 @@ export function useCommunity(): Community {
       rank: 0,
       name: r.display_name,
       state: normalizeState(r.state),
+      avatarUrl: r.avatar_url ?? null,
       pctLost: r.pct_lost,
       activeRecent: r.active_recent,
       isCurrentUser: userId != null && r.user_id === userId,
@@ -226,5 +233,75 @@ export function useCommunity(): Community {
     totalCount: rows.length,
     loading,
     isReal: hasRemote,
+  };
+}
+
+export interface CommunityStats {
+  lbsLost: number;
+  meals: number;
+  steps: number;
+  members: number;
+  isReal: boolean;
+}
+
+interface StatsRpcRow {
+  lbs_lost: number;
+  meals: number;
+  steps: number;
+  members: number;
+}
+
+/**
+ * Combined "together" totals: pounds lost across everyone, meals tracked, and steps. Uses the
+ * community_stats RPC when available; otherwise falls back to just the signed-in user's own totals so
+ * the counters still show something real.
+ */
+export function useCommunityStats(): CommunityStats {
+  const foodCount = useFoodLogStore((s) => s.entries.length);
+  const mySteps = useStepsStore((s) => totalSteps(s.entries));
+  const profile = useProfileStore(
+    useShallow((s) => ({
+      enrolled: s.enrolled,
+      startWeightKg: s.startWeightKg,
+      latestWeightKg: s.latestWeightKg,
+    })),
+  );
+  const [remote, setRemote] = useState<StatsRpcRow | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let alive = true;
+    void supabase.rpc('community_stats').then(({ data, error }) => {
+      if (!alive || error || !data || !Array.isArray(data) || data.length === 0) return;
+      setRemote(data[0] as StatsRpcRow);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [foodCount, mySteps, profile.latestWeightKg, profile.enrolled]);
+
+  if (remote) {
+    return {
+      lbsLost: Number(remote.lbs_lost) || 0,
+      meals: Number(remote.meals) || 0,
+      steps: Number(remote.steps) || 0,
+      members: Number(remote.members) || 0,
+      isReal: true,
+    };
+  }
+
+  const myLbs =
+    profile.startWeightKg != null
+      ? Math.max(
+          (profile.startWeightKg - (profile.latestWeightKg ?? profile.startWeightKg)) * 2.2046226,
+          0,
+        )
+      : 0;
+  return {
+    lbsLost: Math.round(myLbs * 10) / 10,
+    meals: foodCount,
+    steps: mySteps,
+    members: profile.enrolled ? 1 : 0,
+    isReal: false,
   };
 }

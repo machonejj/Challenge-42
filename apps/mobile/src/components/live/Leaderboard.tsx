@@ -1,4 +1,5 @@
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '@challenge42/config';
 import type { LeaderRow } from '@/features/live/community';
 import { Card } from '@/components/ui/Card';
@@ -7,37 +8,64 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Divider } from '@/components/ui/Divider';
 import { LiveDot } from '@/components/ui/LiveDot';
 
-const MEDAL = ['#C9A65B', '#B9BDC4', '#C08457']; // gold / silver / bronze for ranks 1–3
-
-function Rank({ rank }: { rank: number }) {
-  if (rank <= 3) {
-    return (
-      <View style={[styles.medal, { backgroundColor: MEDAL[rank - 1] }]}>
-        <Text variant="labelSm" style={styles.medalText}>
-          {rank}
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <Text variant="labelMd" color="tertiary" style={styles.rankNum}>
-      {rank}
-    </Text>
-  );
-}
+const MEDAL = ['#C9A65B', '#B9BDC4', '#C08457']; // gold / silver / bronze
 
 function pctText(pct: number): string {
   if (pct > 0) return `${pct.toFixed(1)}%`;
-  if (pct < 0) return `+${Math.abs(pct).toFixed(1)}%`; // gained
-  return '—';
+  if (pct < 0) return `+${Math.abs(pct).toFixed(1)}%`;
+  return '0%';
 }
 
-function Row({ entry }: { entry: LeaderRow }) {
+/** One podium column (bigger + raised for 1st). */
+function Podium({ entry }: { entry: LeaderRow }): React.JSX.Element {
+  const first = entry.rank === 1;
+  const size = first ? 76 : 60;
+  return (
+    <View style={[styles.podium, first && styles.podiumFirst]}>
+      {first ? (
+        <Ionicons name="trophy" size={18} color={colors.brand.gold} style={styles.crown} />
+      ) : null}
+      <View>
+        <View style={[styles.ring, { borderColor: MEDAL[entry.rank - 1] }]}>
+          <Avatar
+            name={entry.name}
+            uri={entry.avatarUrl}
+            size={size}
+            tone={entry.isCurrentUser ? 'gold' : 'pine'}
+          />
+        </View>
+        <View style={[styles.rankBadge, { backgroundColor: MEDAL[entry.rank - 1] }]}>
+          <Text variant="labelSm" style={styles.rankBadgeText}>
+            {entry.rank}
+          </Text>
+        </View>
+      </View>
+      <Text variant="labelMd" numberOfLines={1} style={styles.podiumName}>
+        {entry.isCurrentUser ? 'You' : entry.name}
+      </Text>
+      <Text variant="titleMd" style={{ color: colors.status.positive }}>
+        {pctText(entry.pctLost)}
+      </Text>
+      <Text variant="labelSm" color="tertiary" numberOfLines={1}>
+        {entry.state ?? ' '}
+      </Text>
+    </View>
+  );
+}
+
+function Row({ entry }: { entry: LeaderRow }): React.JSX.Element {
   const lost = entry.pctLost > 0;
   return (
     <View style={[styles.row, entry.isCurrentUser && styles.currentRow]}>
-      <Rank rank={entry.rank} />
-      <Avatar name={entry.name} size={36} tone={entry.isCurrentUser ? 'gold' : 'pine'} />
+      <Text variant="labelMd" color="tertiary" style={styles.rankNum}>
+        {entry.rank}
+      </Text>
+      <Avatar
+        name={entry.name}
+        uri={entry.avatarUrl}
+        size={38}
+        tone={entry.isCurrentUser ? 'gold' : 'pine'}
+      />
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text variant="labelMd" numberOfLines={1} style={styles.name}>
@@ -71,7 +99,7 @@ function Row({ entry }: { entry: LeaderRow }) {
   );
 }
 
-/** A clear, honest leaderboard ranked by % of body weight lost. Highlights the signed-in user. */
+/** A wonderful leaderboard: a top-3 podium with face photos, then the ranked list. */
 export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX.Element {
   if (rows.length === 0) {
     return (
@@ -82,21 +110,68 @@ export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX
       </Card>
     );
   }
+
+  const top = rows.slice(0, 3);
+  const rest = rows.slice(3);
+  // Podium order: 2nd, 1st, 3rd (classic podium layout).
+  const order = [top[1], top[0], top[2]].filter(Boolean) as LeaderRow[];
+
   return (
-    <Card padded={false}>
-      <View style={styles.list}>
-        {rows.map((entry, i) => (
-          <View key={entry.userId}>
-            {i > 0 ? <Divider /> : null}
-            <Row entry={entry} />
-          </View>
+    <View style={{ gap: spacing.lg }}>
+      <View style={styles.podiumRow}>
+        {order.map((e) => (
+          <Podium key={e.userId} entry={e} />
         ))}
       </View>
-    </Card>
+
+      {rest.length > 0 ? (
+        <Card padded={false}>
+          <View style={styles.list}>
+            {rest.map((entry, i) => (
+              <View key={entry.userId}>
+                {i > 0 ? <Divider /> : null}
+                <Row entry={entry} />
+              </View>
+            ))}
+          </View>
+        </Card>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  podiumRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+  },
+  podium: { flex: 1, alignItems: 'center', gap: 2 },
+  podiumFirst: { marginBottom: spacing.lg },
+  crown: { marginBottom: 2 },
+  ring: {
+    borderWidth: 2.5,
+    borderRadius: radius.pill,
+    padding: 2,
+  },
+  rankBadge: {
+    position: 'absolute',
+    bottom: -4,
+    alignSelf: 'center',
+    minWidth: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: colors.surface.background,
+  },
+  rankBadgeText: { color: '#1C1A15', fontWeight: '700', fontSize: 11 },
+  podiumName: { marginTop: spacing.sm },
+
   list: { paddingHorizontal: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   currentRow: {
@@ -105,15 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201, 166, 91, 0.10)',
     borderRadius: radius.md,
   },
-  medal: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  medalText: { color: '#1C1A15', fontWeight: '700' },
-  rankNum: { width: 26, textAlign: 'center' },
+  rankNum: { width: 22, textAlign: 'center' },
   info: { flex: 1, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   name: { flexShrink: 1 },

@@ -14,6 +14,7 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ChallengeHeader } from '@/components/home/ChallengeHeader';
 import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
+import { CommunityCounters } from '@/components/community/CommunityCounters';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
@@ -80,6 +81,10 @@ export default function HomeScreen(): React.JSX.Element {
             </View>
           ) : null}
           <TodayBlock data={data} onQuick={(dest) => router.push(dest)} />
+
+          <Section title="Together" style={styles.section}>
+            <CommunityCounters />
+          </Section>
         </View>
       </ScreenScaffold>
     </>
@@ -91,7 +96,9 @@ function TodayBlock({
   onQuick,
 }: {
   data: HomeSnapshot;
-  onQuick: (dest: '/track' | '/live' | '/weigh-in' | '/activity' | '/log-food') => void;
+  onQuick: (
+    dest: '/track' | '/live' | '/weigh-in' | '/activity' | '/log-food' | '/log-steps',
+  ) => void;
 }) {
   const { today } = data;
   const scoreProgress = today.score / today.scoreMax;
@@ -139,16 +146,13 @@ function TodayBlock({
       <View style={styles.quickRow}>
         <QuickAction
           icon="restaurant-outline"
-          label="Log Food"
+          label="Food"
           tone="primary"
           onPress={() => onQuick('/log-food')}
         />
         <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/weigh-in')} />
-        <QuickAction
-          icon="play-outline"
-          label="Start Activity"
-          onPress={() => onQuick('/activity')}
-        />
+        <QuickAction icon="footsteps-outline" label="Steps" onPress={() => onQuick('/log-steps')} />
+        <QuickAction icon="play-outline" label="Activity" onPress={() => onQuick('/activity')} />
       </View>
     </Section>
   );
@@ -160,6 +164,7 @@ const styles = StyleSheet.create({
     marginTop: spacing['2xl'],
   },
   firstSection: { marginTop: 0 },
+  section: { marginTop: spacing['2xl'] },
   todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   metrics: { flex: 1, gap: spacing.md },
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
