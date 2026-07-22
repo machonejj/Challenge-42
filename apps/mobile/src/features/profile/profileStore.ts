@@ -59,6 +59,7 @@ interface ProfileState {
   privacy: PrivacySettings;
 
   setEnrollment: (p: EnrollmentPayload) => void;
+  setLatestWeightKg: (kg: number) => void;
   updatePreferences: (patch: Partial<EditablePreferences>) => void;
   updatePrivacy: (patch: Partial<PrivacySettings>) => void;
   reset: () => void;
@@ -106,6 +107,10 @@ export const useProfileStore = create<ProfileState>()(
           recommendation: p.recommendation,
           safetyStatus: p.safetyStatus,
         }),
+
+      // Updated when a weigh-in is logged (we store the smoothed trend, not the raw reading, so
+      // Home stays calm). Never touches the immutable start snapshot.
+      setLatestWeightKg: (kg) => set({ latestWeightKg: kg }),
 
       // Editing current preferences NEVER touches the immutable start snapshot.
       updatePreferences: (patch) => set((s) => ({ ...s, ...patch })),

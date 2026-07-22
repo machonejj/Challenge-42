@@ -16,7 +16,6 @@ import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
 import { RankCard } from '@/components/home/RankCard';
 import { ActivityPulse } from '@/components/home/ActivityPulse';
-import { TeamStandingCard } from '@/components/home/TeamStandingCard';
 import { MealPlanPreview } from '@/components/home/MealPlanPreview';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
 import { useProfileStore } from '@/features/profile/profileStore';
@@ -98,13 +97,22 @@ export default function HomeScreen(): React.JSX.Element {
             <ActivityPulse pulse={data.pulse} onCheer={() => {}} />
           </Section>
 
-          <Section
-            title="Your Team"
-            actionLabel="Team"
-            onAction={() => router.push('/community')}
-            style={styles.section}
-          >
-            <TeamStandingCard team={data.team} />
+          <Section title="Together" style={styles.section}>
+            <Card>
+              <View style={styles.collectiveRow}>
+                <View style={styles.collectiveIcon}>
+                  <Ionicons name="people-outline" size={22} color={colors.brand.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="displayMd" color="gold">
+                    {formatThousands(data.collectiveLostLb)} lbs
+                  </Text>
+                  <Text variant="labelMd" color="secondary">
+                    lost by {formatThousands(data.challengerCount)} challengers together
+                  </Text>
+                </View>
+              </View>
+            </Card>
           </Section>
 
           <Section
@@ -118,7 +126,7 @@ export default function HomeScreen(): React.JSX.Element {
 
           {data.isDemo ? (
             <Text variant="labelSm" color="tertiary" align="center" style={styles.demoNote}>
-              Live activity, teams & meal plans are demo data for now
+              Live activity & meal plans are demo data for now
             </Text>
           ) : null}
         </View>
@@ -132,7 +140,7 @@ function TodayBlock({
   onQuick,
 }: {
   data: HomeSnapshot;
-  onQuick: (dest: '/track' | '/live') => void;
+  onQuick: (dest: '/track' | '/live' | '/weigh-in') => void;
 }) {
   const { today } = data;
   const scoreProgress = today.score / today.scoreMax;
@@ -184,7 +192,7 @@ function TodayBlock({
           tone="primary"
           onPress={() => onQuick('/track')}
         />
-        <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/track')} />
+        <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/weigh-in')} />
         <QuickAction icon="play-outline" label="Start Activity" onPress={() => onQuick('/live')} />
       </View>
     </Section>
@@ -203,6 +211,15 @@ const styles = StyleSheet.create({
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
   quickRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   demoNote: { marginTop: spacing['3xl'] },
+  collectiveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  collectiveIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(201, 166, 91, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   safeBanner: {
     flexDirection: 'row',
     alignItems: 'center',

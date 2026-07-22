@@ -4,6 +4,7 @@ import { getAuthService } from '@/services/auth';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { useWeightStore } from '@/features/tracking/weightStore';
 
 export type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
 
@@ -66,6 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Clear per-user state so a different account on this device starts clean (dev single-user model).
     useOnboardingStore.getState().reset();
     useProfileStore.getState().reset();
+    useWeightStore.getState().reset();
     set({ session: null, status: 'signedOut', error: null });
   },
 

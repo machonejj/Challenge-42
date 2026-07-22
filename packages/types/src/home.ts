@@ -86,6 +86,9 @@ export interface HomeSnapshot {
   readonly pulse: HomePulseSummary;
   readonly team: HomeTeamSummary;
   readonly plan: readonly HomePlanMeal[];
+  /** Challenge-wide collective progress — a motivating shared total (not a ranking). */
+  readonly collectiveLostLb: number;
+  readonly challengerCount: number;
   /** True when backed by labeled development/demo data. Surfaced in the UI. */
   readonly isDemo: boolean;
   readonly generatedAt: ISOTimestamp;

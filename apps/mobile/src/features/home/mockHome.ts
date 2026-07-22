@@ -107,6 +107,8 @@ export function buildHomeSnapshot(): HomeSnapshot {
         completed: false,
       },
     ],
+    collectiveLostLb: 1284,
+    challengerCount: 327,
     isDemo: true,
     generatedAt: new Date().toISOString(),
   };
