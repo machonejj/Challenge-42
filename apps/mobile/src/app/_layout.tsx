@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,7 +15,7 @@ import { getAnalytics } from '@/services/analytics/AnalyticsService';
 
 export default function RootLayout(): React.JSX.Element {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={[styles.root, isWeb && styles.rootWeb]}>
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
           <RootNavigator />
@@ -24,6 +24,8 @@ export default function RootLayout(): React.JSX.Element {
     </GestureHandlerRootView>
   );
 }
+
+const isWeb = Platform.OS === 'web';
 
 function RootNavigator(): React.JSX.Element {
   const router = useRouter();
@@ -66,7 +68,7 @@ function RootNavigator(): React.JSX.Element {
   }, [ready, authStatus, onbStatus, segments, router]);
 
   return (
-    <>
+    <View style={[styles.frame, isWeb && styles.frameWeb]}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -82,7 +84,7 @@ function RootNavigator(): React.JSX.Element {
         <Stack.Screen name="activity" options={{ presentation: 'modal' }} />
       </Stack>
       {!ready ? <SplashOverlay /> : null}
-    </>
+    </View>
   );
 }
 
@@ -98,6 +100,14 @@ function SplashOverlay(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
+  // On web, sit the app in a centered phone-width column on a muted backdrop, so every screen (and
+  // the map) fits like a phone instead of stretching across the browser. No-op on real devices.
+  // Centering is done with alignSelf on the frame (NOT alignItems on the root, which would collapse
+  // the provider views to zero width on react-native-web).
+  rootWeb: { backgroundColor: '#DED8C7' },
+  frame: { flex: 1, width: '100%' },
+  frameWeb: { maxWidth: 460, alignSelf: 'center', backgroundColor: colors.surface.background },
   splash: {
     position: 'absolute',
     top: 0,
