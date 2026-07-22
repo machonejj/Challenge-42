@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { isSupabaseConfigured } from '@/services/supabase/client';
 import { startCloudSync, stopCloudSync } from '@/services/sync/cloudSync';
 import { useAuthStore } from '@/features/auth/authStore';
+import { useAccessStore } from '@/features/admin/accessStore';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
@@ -57,6 +58,21 @@ function RootNavigator(): React.JSX.Element {
     return undefined;
   }, [authStatus, userId]);
 
+  // Access control: on sign-in, refresh admin flag and sign out anyone whose access was revoked.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    if (authStatus === 'signedIn' && userId) {
+      void useAccessStore
+        .getState()
+        .refresh()
+        .then((disabled) => {
+          if (disabled) void useAuthStore.getState().signOut();
+        });
+    } else if (authStatus === 'signedOut') {
+      useAccessStore.getState().clear();
+    }
+  }, [authStatus, userId]);
+
   const ready = authStatus !== 'restoring' && onbHydrated && profileHydrated;
 
   useEffect(() => {
@@ -97,6 +113,7 @@ function RootNavigator(): React.JSX.Element {
         <Stack.Screen name="activity" options={{ presentation: 'modal' }} />
         <Stack.Screen name="log-food" options={{ presentation: 'modal' }} />
         <Stack.Screen name="edit-food" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="admin" options={{ presentation: 'modal' }} />
       </Stack>
       {!ready ? <SplashOverlay /> : null}
     </View>

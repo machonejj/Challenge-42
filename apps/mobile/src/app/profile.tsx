@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useAuthStore } from '@/features/auth/authStore';
+import { useAccessStore } from '@/features/admin/accessStore';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
 
 function Segmented<T extends string>({
@@ -73,6 +74,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const store = useProfileStore();
   const signOut = useAuthStore((s) => s.signOut);
+  const isAdmin = useAccessStore((s) => s.isAdmin);
   const analytics = getAnalytics();
 
   const [displayName, setDisplayName] = useState(store.displayName ?? store.firstName ?? '');
@@ -168,6 +170,24 @@ export default function ProfileScreen(): React.JSX.Element {
           </SettingBlock>
           <Button label="Save changes" onPress={savePrefs} disabled={!dirty} />
         </Card>
+
+        {isAdmin ? (
+          <>
+            <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
+              ADMIN
+            </Text>
+            <Card>
+              <Button
+                label="Open admin dashboard"
+                icon="shield-checkmark-outline"
+                onPress={() => router.push('/admin')}
+              />
+              <Text variant="labelSm" color="tertiary" style={{ marginTop: spacing.sm }}>
+                Invite people and manage who has access to the challenge.
+              </Text>
+            </Card>
+          </>
+        ) : null}
 
         <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
           PRIVACY · PRIVATE BY DEFAULT

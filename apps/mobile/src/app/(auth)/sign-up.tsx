@@ -5,6 +5,7 @@ import { signUpSchema } from '@challenge42/validation';
 import { brand, spacing } from '@challenge42/config';
 import { AuthShell } from '@/features/auth/AuthShell';
 import { useAuthStore } from '@/features/auth/authStore';
+import { isEmailAllowed } from '@/features/admin/adminService';
 import { AUTH_ERROR_COPY } from '@/services/auth';
 import { TextField } from '@/components/ui/TextField';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,8 @@ export default function SignUp(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
   const busy = useAuthStore((s) => s.busy);
   const authError = useAuthStore((s) => s.error);
   const signUp = useAuthStore((s) => s.signUp);
@@ -21,6 +24,7 @@ export default function SignUp(): React.JSX.Element {
 
   const onSubmit = async () => {
     clearError();
+    setNotice(null);
     const parsed = signUpSchema.safeParse({ email, password });
     if (!parsed.success) {
       const errs: { email?: string; password?: string } = {};
@@ -33,6 +37,14 @@ export default function SignUp(): React.JSX.Element {
       return;
     }
     setFieldErrors({});
+    // Invite-only: check the allowlist first so we can show a friendly message.
+    setChecking(true);
+    const allowed = await isEmailAllowed(parsed.data.email);
+    setChecking(false);
+    if (!allowed) {
+      setNotice('This email hasn’t been invited to the challenge yet. Ask the admin to add you.');
+      return;
+    }
     await signUp(parsed.data.email, parsed.data.password);
     // On success the root gate routes to onboarding automatically.
   };
@@ -42,7 +54,13 @@ export default function SignUp(): React.JSX.Element {
       title="Create your account"
       subtitle="Then we’ll build your 42-day reset around your real life."
     >
-      {authError ? (
+      {notice ? (
+        <View style={styles.banner}>
+          <Text variant="bodyMd" color="danger">
+            {notice}
+          </Text>
+        </View>
+      ) : authError ? (
         <View style={styles.banner}>
           <Text variant="bodyMd" color="danger">
             {AUTH_ERROR_COPY[authError]}
@@ -68,7 +86,7 @@ export default function SignUp(): React.JSX.Element {
         autoCapitalize="none"
         error={fieldErrors.password}
       />
-      <Button label="Create account" onPress={onSubmit} loading={busy} />
+      <Button label="Create account" onPress={onSubmit} loading={busy || checking} />
       <Text variant="labelSm" color="tertiary">
         {brand.legal.disclaimer}
       </Text>

@@ -96,6 +96,11 @@ export default function Welcome(): React.JSX.Element {
             </Text>
           </Link>
         </View>
+        <Link href="/(auth)/sign-in" accessibilityRole="link" style={styles.adminLink}>
+          <Text variant="labelSm" style={{ color: colors.text.onPineMuted }}>
+            Admin sign in
+          </Text>
+        </Link>
       </View>
     </View>
   );
@@ -117,4 +122,5 @@ const styles = StyleSheet.create({
   },
   dotActive: { backgroundColor: colors.brand.gold, width: 22 },
   signInRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  adminLink: { alignSelf: 'center', opacity: 0.7 },
 });
