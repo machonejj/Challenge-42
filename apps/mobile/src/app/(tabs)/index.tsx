@@ -14,7 +14,6 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ChallengeHeader } from '@/components/home/ChallengeHeader';
 import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
-import { MealPlanPreview } from '@/components/home/MealPlanPreview';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
@@ -81,21 +80,6 @@ export default function HomeScreen(): React.JSX.Element {
             </View>
           ) : null}
           <TodayBlock data={data} onQuick={(dest) => router.push(dest)} />
-
-          <Section
-            title="Today's Plan"
-            actionLabel="View Plan"
-            onAction={() => router.push('/plan')}
-            style={styles.section}
-          >
-            <MealPlanPreview meals={data.plan} onPressMeal={() => router.push('/plan')} />
-          </Section>
-
-          {data.isDemo ? (
-            <Text variant="labelSm" color="tertiary" align="center" style={styles.demoNote}>
-              Meal plans are a preview for now
-            </Text>
-          ) : null}
         </View>
       </ScreenScaffold>
     </>
@@ -176,12 +160,10 @@ const styles = StyleSheet.create({
     marginTop: spacing['2xl'],
   },
   firstSection: { marginTop: 0 },
-  section: { marginTop: spacing['2xl'] },
   todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   metrics: { flex: 1, gap: spacing.md },
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
   quickRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
-  demoNote: { marginTop: spacing['3xl'] },
   safeBanner: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useShallow } from 'zustand/react/shallow';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, layout } from '@challenge42/config';
+import { colors, radius, spacing } from '@challenge42/config';
 import { buildDailySeries, kgToDisplay, round } from '@challenge42/domain';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
 import { Card } from '@/components/ui/Card';
@@ -40,7 +40,6 @@ const SLOT_LABEL = {
 
 export default function TrackScreen(): React.JSX.Element {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const summary = useWeightSummary();
   const entries = useWeightStore((s) => s.entries);
   const profile = useProfileStore(
@@ -56,12 +55,11 @@ export default function TrackScreen(): React.JSX.Element {
   );
 
   const foodEntries = useFoodLogStore((s) => s.entries);
+  const removeEntry = useFoodLogStore((s) => s.removeEntry);
   const totals = useMemo(() => todayFoodTotals(foodEntries, Date.now()), [foodEntries]);
   const calorieTarget = profile.calorieTarget;
   const calorieRemaining = calorieTarget != null ? calorieTarget - totals.calories : null;
   const calorieProgress = calorieTarget ? Math.min(totals.calories / calorieTarget, 1) : 0;
-
-  const chartWidth = width - layout.screenGutter * 2 - layout.cardPadding * 2;
 
   const series = useMemo(() => {
     if (profile.startWeightKg == null || !profile.startDate) return [];
@@ -153,7 +151,6 @@ export default function TrackScreen(): React.JSX.Element {
                 targetKg={targetKg}
                 totalDays={profile.totalDays}
                 unit={summary.unit}
-                width={chartWidth}
               />
             </View>
 
@@ -239,12 +236,28 @@ export default function TrackScreen(): React.JSX.Element {
                     </Text>
                     {group.items.map((it) => (
                       <View key={it.id} style={styles.foodItem}>
-                        <Text variant="bodyMd" style={{ flex: 1 }} numberOfLines={1}>
-                          {it.label}
-                        </Text>
-                        <Text variant="labelMd" color="secondary">
-                          {it.calories} cal
-                        </Text>
+                        <Pressable
+                          style={styles.foodItemMain}
+                          onPress={() => router.push(`/edit-food?id=${it.id}`)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${it.label}`}
+                        >
+                          <Text variant="bodyMd" style={{ flex: 1 }} numberOfLines={1}>
+                            {it.label}
+                          </Text>
+                          <Text variant="labelMd" color="secondary">
+                            {it.calories} cal
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => removeEntry(it.id)}
+                          hitSlop={8}
+                          style={styles.foodDelete}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${it.label}`}
+                        >
+                          <Ionicons name="close" size={16} color={colors.text.tertiary} />
+                        </Pressable>
                       </View>
                     ))}
                   </View>
@@ -306,5 +319,20 @@ const styles = StyleSheet.create({
   calFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.status.positive },
   foodList: { marginTop: spacing.lg },
   slotGroup: { marginTop: spacing.md, gap: 2 },
-  foodItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 3 },
+  foodItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 3 },
+  foodItemMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: 4,
+  },
+  foodDelete: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface.sunken,
+  },
 });

@@ -1,4 +1,5 @@
-import { View, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Polyline, Polygon, Circle, Text as SvgText } from 'react-native-svg';
 import { colors, spacing } from '@challenge42/config';
 import { kgToDisplay, round, type DailyWeightPoint } from '@challenge42/domain';
@@ -12,7 +13,6 @@ export interface WeightJourneyChartProps {
   targetKg: number | null;
   totalDays: number;
   unit: WeightUnit;
-  width: number;
   height?: number;
 }
 
@@ -22,17 +22,21 @@ const STROKE = '#c9c3b5';
  * The weight journey: each actual weigh-in is a clear point, connected into a trend line, framed
  * between a dashed "start" reference and a dashed gold "goal" line. Weigh-ins are spread across the
  * full width (first → latest) so the chart always reads well — one point sits centered, many points
- * fill the plot — instead of cramming everything into the left of a fixed 42-day axis. Start/goal
- * labels live in a legend below the plot, so text never overlaps the data.
+ * fill the plot. Start/goal labels live in a legend below the plot, so text never overlaps the data.
+ *
+ * The chart measures its OWN container width (never the window) so it always fits its card — on the
+ * web the app sits in a narrow phone frame, so a window-derived width would overflow the card.
  */
 export function WeightJourneyChart({
   series,
   startKg,
   targetKg,
   unit,
-  width,
   height = 176,
 }: WeightJourneyChartProps): React.JSX.Element {
+  const [width, setWidth] = useState(0);
+  const onLayout = (e: LayoutChangeEvent): void => setWidth(e.nativeEvent.layout.width);
+
   const padL = 12;
   const padR = 14;
   const padT = 16;
@@ -75,95 +79,99 @@ export function WeightJourneyChart({
   const gridYs = [0.33, 0.66].map((f) => padT + f * plotH);
 
   return (
-    <View style={{ width }}>
-      <Svg width={width} height={height}>
-        {gridYs.map((gy, i) => (
-          <Line
-            key={`g${i}`}
-            x1={padL}
-            y1={gy}
-            x2={padL + plotW}
-            y2={gy}
-            stroke={colors.border.hairline}
-            strokeWidth={1}
-          />
-        ))}
+    <View style={styles.container} onLayout={onLayout}>
+      {width > 0 ? (
+        <>
+          <Svg width={width} height={height}>
+            {gridYs.map((gy, i) => (
+              <Line
+                key={`g${i}`}
+                x1={padL}
+                y1={gy}
+                x2={padL + plotW}
+                y2={gy}
+                stroke={colors.border.hairline}
+                strokeWidth={1}
+              />
+            ))}
 
-        {/* Goal reference (dashed gold, horizontal) */}
-        {targetKg != null ? (
-          <Line
-            x1={padL}
-            y1={y(targetKg)}
-            x2={padL + plotW}
-            y2={y(targetKg)}
-            stroke={colors.brand.gold}
-            strokeWidth={1.5}
-            strokeDasharray="5 5"
-          />
-        ) : null}
+            {/* Goal reference (dashed gold, horizontal) */}
+            {targetKg != null ? (
+              <Line
+                x1={padL}
+                y1={y(targetKg)}
+                x2={padL + plotW}
+                y2={y(targetKg)}
+                stroke={colors.brand.gold}
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+              />
+            ) : null}
 
-        {/* Trend area + line */}
-        {pts.length >= 2 ? (
-          <>
-            <Polygon points={areaPoints} fill="rgba(18, 56, 43, 0.06)" />
-            <Polyline
-              points={linePoints}
-              fill="none"
-              stroke={colors.brand.pine}
-              strokeWidth={2.5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
+            {/* Trend area + line */}
+            {pts.length >= 2 ? (
+              <>
+                <Polygon points={areaPoints} fill="rgba(18, 56, 43, 0.06)" />
+                <Polyline
+                  points={linePoints}
+                  fill="none"
+                  stroke={colors.brand.pine}
+                  strokeWidth={2.5}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </>
+            ) : null}
+
+            {/* Start reference (dashed) */}
+            <Line
+              x1={padL}
+              y1={startY}
+              x2={padL + plotW}
+              y2={startY}
+              stroke={STROKE}
+              strokeWidth={1}
+              strokeDasharray="3 4"
             />
-          </>
-        ) : null}
 
-        {/* Start reference (dashed) */}
-        <Line
-          x1={padL}
-          y1={startY}
-          x2={padL + plotW}
-          y2={startY}
-          stroke={STROKE}
-          strokeWidth={1}
-          strokeDasharray="3 4"
-        />
+            {/* Each actual weigh-in as a clear point */}
+            {pts.map((p, i) => (
+              <Circle
+                key={`p${i}`}
+                cx={p.x}
+                cy={p.y}
+                r={4.5}
+                fill={colors.brand.pine}
+                stroke={colors.surface.card}
+                strokeWidth={2.5}
+              />
+            ))}
 
-        {/* Each actual weigh-in as a clear point */}
-        {pts.map((p, i) => (
-          <Circle
-            key={`p${i}`}
-            cx={p.x}
-            cy={p.y}
-            r={4.5}
-            fill={colors.brand.pine}
-            stroke={colors.surface.card}
-            strokeWidth={2.5}
-          />
-        ))}
+            {/* Day axis */}
+            <SvgText x={padL} y={height - 4} fontSize={10} fill={colors.text.tertiary}>
+              Day {first}
+            </SvgText>
+            {!single ? (
+              <SvgText
+                x={padL + plotW}
+                y={height - 4}
+                fontSize={10}
+                fill={colors.text.tertiary}
+                textAnchor="end"
+              >
+                Day {lastD}
+              </SvgText>
+            ) : null}
+          </Svg>
 
-        {/* Day axis */}
-        <SvgText x={padL} y={height - 4} fontSize={10} fill={colors.text.tertiary}>
-          Day {first}
-        </SvgText>
-        {!single ? (
-          <SvgText
-            x={padL + plotW}
-            y={height - 4}
-            fontSize={10}
-            fill={colors.text.tertiary}
-            textAnchor="end"
-          >
-            Day {lastD}
-          </SvgText>
-        ) : null}
-      </Svg>
-
-      <View style={styles.legend}>
-        <LegendItem color={STROKE} label={`Start ${label(startKg)}`} />
-        {targetKg != null ? (
-          <LegendItem color={colors.brand.gold} label={`Goal ${label(targetKg)}`} />
-        ) : null}
-      </View>
+          <View style={styles.legend}>
+            <LegendItem color={STROKE} label={`Start ${label(startKg)}`} />
+            {targetKg != null ? (
+              <LegendItem color={colors.brand.gold} label={`Goal ${label(targetKg)}`} />
+            ) : null}
+          </View>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -182,6 +190,7 @@ function LegendItem({ color, label }: { color: string; label: string }): React.J
 }
 
 const styles = StyleSheet.create({
+  container: { width: '100%', minHeight: 176 },
   legend: {
     flexDirection: 'row',
     gap: spacing.lg,

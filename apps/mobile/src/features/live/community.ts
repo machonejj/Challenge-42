@@ -40,6 +40,79 @@ interface RpcRow {
   active_recent: boolean;
 }
 
+// Full state name → USPS code, so free-typed locations still land on the map.
+const STATE_NAMES: Record<string, string> = {
+  alabama: 'AL',
+  alaska: 'AK',
+  arizona: 'AZ',
+  arkansas: 'AR',
+  california: 'CA',
+  colorado: 'CO',
+  connecticut: 'CT',
+  delaware: 'DE',
+  'district of columbia': 'DC',
+  florida: 'FL',
+  georgia: 'GA',
+  hawaii: 'HI',
+  idaho: 'ID',
+  illinois: 'IL',
+  indiana: 'IN',
+  iowa: 'IA',
+  kansas: 'KS',
+  kentucky: 'KY',
+  louisiana: 'LA',
+  maine: 'ME',
+  maryland: 'MD',
+  massachusetts: 'MA',
+  michigan: 'MI',
+  minnesota: 'MN',
+  mississippi: 'MS',
+  missouri: 'MO',
+  montana: 'MT',
+  nebraska: 'NE',
+  nevada: 'NV',
+  'new hampshire': 'NH',
+  'new jersey': 'NJ',
+  'new mexico': 'NM',
+  'new york': 'NY',
+  'north carolina': 'NC',
+  'north dakota': 'ND',
+  ohio: 'OH',
+  oklahoma: 'OK',
+  oregon: 'OR',
+  pennsylvania: 'PA',
+  'rhode island': 'RI',
+  'south carolina': 'SC',
+  'south dakota': 'SD',
+  tennessee: 'TN',
+  texas: 'TX',
+  utah: 'UT',
+  vermont: 'VT',
+  virginia: 'VA',
+  washington: 'WA',
+  'west virginia': 'WV',
+  wisconsin: 'WI',
+  wyoming: 'WY',
+};
+
+/**
+ * Normalize a free-typed location to a USPS 2-letter code the map understands. Accepts a bare code
+ * ("ca"), a full state name ("California"), or a trailing code ("Lancaster, CA"). Returns null when
+ * nothing matches, so the row simply won't place a dot rather than mis-placing one.
+ */
+export function normalizeState(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const upper = trimmed.toUpperCase();
+  if (STATE_XY[upper]) return upper; // already a valid code
+  const byName = STATE_NAMES[trimmed.toLowerCase()];
+  if (byName) return byName;
+  const trailing = upper.match(/\b([A-Z]{2})\b\s*$/); // "City, ST" / "City ST"
+  if (trailing && STATE_XY[trailing[1]!]) return trailing[1]!;
+  return null;
+}
+
 async function fetchRemote(): Promise<RpcRow[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('get_leaderboard');
@@ -103,7 +176,7 @@ export function useCommunity(): Community {
           userId: userId ?? 'me',
           rank: 1,
           name: profile.firstName ?? 'You',
-          state: profile.state ?? null,
+          state: normalizeState(profile.state),
           pctLost: pctLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
           activeRecent: true,
           isCurrentUser: true,
@@ -117,7 +190,7 @@ export function useCommunity(): Community {
       userId: r.user_id,
       rank: 0,
       name: r.display_name,
-      state: r.state,
+      state: normalizeState(r.state),
       pctLost: r.pct_lost,
       activeRecent: r.active_recent,
       isCurrentUser: userId != null && r.user_id === userId,

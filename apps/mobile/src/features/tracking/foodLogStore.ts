@@ -17,6 +17,7 @@ interface FoodLogState {
   entries: FoodEntry[];
   hydrated: boolean;
   addEntry: (input: Omit<FoodEntry, 'id' | 'atMs'>) => void;
+  updateEntry: (id: string, patch: Partial<Omit<FoodEntry, 'id' | 'atMs'>>) => void;
   removeEntry: (id: string) => void;
   reset: () => void;
   _setHydrated: () => void;
@@ -29,6 +30,8 @@ export const useFoodLogStore = create<FoodLogState>()(
       hydrated: false,
       addEntry: (input) =>
         set({ entries: [...get().entries, { id: newId(), atMs: Date.now(), ...input }] }),
+      updateEntry: (id, patch) =>
+        set({ entries: get().entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }),
       removeEntry: (id) => set({ entries: get().entries.filter((e) => e.id !== id) }),
       reset: () => set({ entries: [] }),
       _setHydrated: () => set({ hydrated: true }),
