@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@challenge42/config';
-import { typeStyle } from '@/theme/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -19,6 +19,7 @@ function tabIcon(base: IoniconName) {
 
 /** The five primary tabs. Profile/settings live behind the Home header avatar — never a 6th tab. */
 export default function TabsLayout(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -29,8 +30,14 @@ export default function TabsLayout(): React.JSX.Element {
           backgroundColor: colors.surface.card,
           borderTopColor: colors.border.hairline,
           borderTopWidth: StyleSheet.hairlineWidth,
+          // Enough room for icon + label; clears the home indicator via the bottom inset
+          // (and gives browsers, which report no inset, a comfortable gap too).
+          height: 64 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 4 : 16,
         },
-        tabBarLabelStyle: { ...typeStyle('labelSm'), marginTop: 2 },
+        // Compact, non-uppercase labels so nothing truncates (e.g. "Community").
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.1 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home') }} />

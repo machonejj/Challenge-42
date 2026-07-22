@@ -140,7 +140,7 @@ function TodayBlock({
   onQuick,
 }: {
   data: HomeSnapshot;
-  onQuick: (dest: '/track' | '/live' | '/weigh-in' | '/activity') => void;
+  onQuick: (dest: '/track' | '/live' | '/weigh-in' | '/activity' | '/log-food') => void;
 }) {
   const { today } = data;
   const scoreProgress = today.score / today.scoreMax;
@@ -190,7 +190,7 @@ function TodayBlock({
           icon="restaurant-outline"
           label="Log Food"
           tone="primary"
-          onPress={() => onQuick('/track')}
+          onPress={() => onQuick('/log-food')}
         />
         <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/weigh-in')} />
         <QuickAction

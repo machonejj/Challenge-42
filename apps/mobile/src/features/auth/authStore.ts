@@ -5,6 +5,7 @@ import { getAnalytics } from '@/services/analytics/AnalyticsService';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useWeightStore } from '@/features/tracking/weightStore';
+import { useFoodLogStore } from '@/features/tracking/foodLogStore';
 import { useActivityStore } from '@/features/activity/activityStore';
 
 export type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     useOnboardingStore.getState().reset();
     useProfileStore.getState().reset();
     useWeightStore.getState().reset();
+    useFoodLogStore.getState().reset();
     useActivityStore.getState().reset();
     set({ session: null, status: 'signedOut', error: null });
   },

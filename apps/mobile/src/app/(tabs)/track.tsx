@@ -15,6 +15,8 @@ import { WeightJourneyChart } from '@/components/tracking/WeightJourneyChart';
 import { useWeightSummary } from '@/features/tracking/useWeightSummary';
 import { useWeightStore } from '@/features/tracking/weightStore';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { useFoodLogStore, todayFoodTotals } from '@/features/tracking/foodLogStore';
+import { formatThousands } from '@/lib/format';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -29,6 +31,13 @@ const DELTA_COLOR = {
   none: colors.text.tertiary,
 } as const;
 
+const SLOT_LABEL = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snack',
+} as const;
+
 export default function TrackScreen(): React.JSX.Element {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -41,8 +50,16 @@ export default function TrackScreen(): React.JSX.Element {
       startDate: s.challengeStartDate,
       totalDays: s.challengeLengthDays,
       lossRange: s.recommendation?.weightLossRangeKg ?? null,
+      calorieTarget: s.recommendation?.calorieTarget ?? null,
+      proteinTarget: s.recommendation?.proteinTargetG ?? null,
     })),
   );
+
+  const foodEntries = useFoodLogStore((s) => s.entries);
+  const totals = useMemo(() => todayFoodTotals(foodEntries, Date.now()), [foodEntries]);
+  const calorieTarget = profile.calorieTarget;
+  const calorieRemaining = calorieTarget != null ? calorieTarget - totals.calories : null;
+  const calorieProgress = calorieTarget ? Math.min(totals.calories / calorieTarget, 1) : 0;
 
   const chartWidth = width - layout.screenGutter * 2 - layout.cardPadding * 2;
 
@@ -164,18 +181,87 @@ export default function TrackScreen(): React.JSX.Element {
         )}
 
         <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
-          CALORIES
+          CALORIES · TODAY
         </Text>
-        <Card style={styles.rowBetween}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyLg">In-app food logging</Text>
+        <Card>
+          {calorieTarget != null ? (
+            <>
+              <View style={styles.calTop}>
+                <View>
+                  <Text variant="displayMd">{formatThousands(totals.calories)}</Text>
+                  <Text variant="labelSm" color="tertiary">
+                    of {formatThousands(calorieTarget)} kcal
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text
+                    variant="titleMd"
+                    style={{
+                      color:
+                        (calorieRemaining ?? 0) >= 0
+                          ? colors.status.positive
+                          : colors.status.danger,
+                    }}
+                  >
+                    {formatThousands(Math.abs(calorieRemaining ?? 0))}
+                  </Text>
+                  <Text variant="labelSm" color="tertiary">
+                    {(calorieRemaining ?? 0) >= 0 ? 'remaining' : 'over'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.calTrack}>
+                <View style={[styles.calFill, { width: `${calorieProgress * 100}%` }]} />
+              </View>
+              {profile.proteinTarget != null ? (
+                <Text variant="labelMd" color="secondary" style={{ marginTop: spacing.md }}>
+                  Protein {totals.proteinG} / {profile.proteinTarget}g
+                </Text>
+              ) : null}
+            </>
+          ) : (
             <Text variant="bodyMd" color="secondary">
-              Quick-add calories + food search & barcode scanning.
+              Your plan focuses on consistency, not a calorie number. Log what you like — no
+              pressure.
             </Text>
-          </View>
-          <Text variant="labelSm" color="tertiary">
-            Next
-          </Text>
+          )}
+
+          {totals.calories > 0 ? (
+            <View style={styles.foodList}>
+              <Divider />
+              {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((s) => {
+                const group = totals.bySlot[s];
+                if (group.items.length === 0) return null;
+                return (
+                  <View key={s} style={styles.slotGroup}>
+                    <Text variant="labelSm" color="tertiary">
+                      {SLOT_LABEL[s]} · {group.calories} cal
+                    </Text>
+                    {group.items.map((it) => (
+                      <View key={it.id} style={styles.foodItem}>
+                        <Text variant="bodyMd" style={{ flex: 1 }} numberOfLines={1}>
+                          {it.label}
+                        </Text>
+                        <Text variant="labelMd" color="secondary">
+                          {it.calories} cal
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text variant="bodyMd" color="tertiary" style={{ marginTop: spacing.md }}>
+              Nothing logged yet today.
+            </Text>
+          )}
+
+          <Button
+            label="Log food"
+            onPress={() => router.push('/log-food')}
+            style={{ marginTop: spacing.lg }}
+          />
         </Card>
       </ScreenScaffold>
     </>
@@ -209,5 +295,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   sectionLabel: { marginTop: spacing['2xl'], marginBottom: spacing.sm },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  calTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  calTrack: {
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface.sunken,
+    overflow: 'hidden',
+    marginTop: spacing.md,
+  },
+  calFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.status.positive },
+  foodList: { marginTop: spacing.lg },
+  slotGroup: { marginTop: spacing.md, gap: 2 },
+  foodItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 3 },
 });

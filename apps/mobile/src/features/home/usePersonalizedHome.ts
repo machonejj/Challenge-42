@@ -9,6 +9,7 @@ import { buildWeightDelta, challengeDayNumber, kgToDisplay, round } from '@chall
 import type { HomeSnapshot } from '@challenge42/types';
 import { useHomeSnapshot } from './useHomeSnapshot';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { useFoodLogStore, todayFoodTotals } from '@/features/tracking/foodLogStore';
 
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -33,6 +34,8 @@ export function usePersonalizedHome() {
     })),
   );
 
+  const foodEntries = useFoodLogStore((s) => s.entries);
+
   const data = useMemo<HomeSnapshot | undefined>(() => {
     const base = query.data;
     if (!base) return undefined;
@@ -50,7 +53,8 @@ export function usePersonalizedHome() {
     // Calorie target: real recommendation, or maintenance ceiling for safe-review users.
     const target =
       rec?.calorieTarget ?? rec?.maintenanceRangeKcal.high ?? base.today.calories.target;
-    const consumed = base.today.calories.consumed; // dev placeholder until tracking (Phase 3)
+    // Consumed = today's real food log.
+    const consumed = todayFoodTotals(foodEntries, Date.now()).calories;
 
     return {
       ...base,
@@ -73,7 +77,7 @@ export function usePersonalizedHome() {
         },
       },
     };
-  }, [query.data, profile]);
+  }, [query.data, profile, foodEntries]);
 
   return { ...query, data };
 }

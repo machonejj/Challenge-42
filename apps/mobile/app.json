@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Challenge42",
-    "slug": "challenge42",
+    "slug": "jake-m",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "102c0a8c-8899-4b18-bc6e-16e590e97efd"
+      }
+    },
+    "owner": "jakemanson5s-team"
   }
 }

@@ -82,6 +82,7 @@ function RootNavigator(): React.JSX.Element {
         <Stack.Screen name="profile" options={{ presentation: 'modal' }} />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="activity" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="log-food" options={{ presentation: 'modal' }} />
       </Stack>
       {!ready ? <SplashOverlay /> : null}
     </View>
