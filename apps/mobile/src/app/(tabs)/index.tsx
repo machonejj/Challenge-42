@@ -16,6 +16,7 @@ import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
 import { WeighInStatus } from '@/components/home/WeighInStatus';
 import { GoalsProgress } from '@/components/home/GoalsProgress';
+import { PointsCard } from '@/components/home/PointsCard';
 import { ChallengeDateBanner } from '@/components/home/ChallengeDateBanner';
 import { CommunityCounters } from '@/components/community/CommunityCounters';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
@@ -151,6 +152,10 @@ export default function HomeScreen(): React.JSX.Element {
           </View>
 
           <TodayBlock data={data} onQuick={(dest) => router.push(dest)} />
+
+          <Section title="Points" style={styles.section}>
+            <PointsCard />
+          </Section>
 
           <Section
             title="Daily goals"

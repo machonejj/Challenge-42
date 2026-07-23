@@ -21,9 +21,19 @@ import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useActivityStore, countToday } from '@/features/activity/activityStore';
+import { POINTS } from '@/features/points/points';
 
 type Mode = 'choose' | 'start' | 'timer' | 'log';
 const DURATIONS = [10, 15, 20, 30, 45];
+
+const QUICK_ADDS: { label: string; type: ActivityTypeKey; durationMin: number; emoji: string }[] = [
+  { label: '1 mile walk', type: 'walk', durationMin: 18, emoji: '🚶' },
+  { label: '1 mile run', type: 'run', durationMin: 10, emoji: '🏃' },
+  { label: '25 push-ups', type: 'strength', durationMin: 3, emoji: '💪' },
+  { label: '10 burpees', type: 'hiit', durationMin: 2, emoji: '🔥' },
+  { label: '50 squats', type: 'strength', durationMin: 3, emoji: '🦵' },
+  { label: '1 min plank', type: 'strength', durationMin: 1, emoji: '🧘' },
+];
 
 function typeLabel(key: ActivityTypeKey): string {
   return ACTIVITY_TYPES.find((t) => t.key === key)?.label ?? key;
@@ -134,8 +144,21 @@ export default function ActivityScreen(): React.JSX.Element {
   const [durationMin, setDurationMin] = useState<number>(15);
   const [logMinutes, setLogMinutes] = useState('30');
   const [logWhen, setLogWhen] = useState<'today' | 'yesterday'>('today');
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const todayCount = countToday(sessions, Date.now());
+
+  const quickAdd = (q: (typeof QUICK_ADDS)[number]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    addSession({
+      type: q.type,
+      title: q.label,
+      durationMin: q.durationMin,
+      completedAtMs: Date.now(),
+      source: 'logged',
+    });
+    setJustAdded(q.label);
+  };
 
   const saveLogged = () => {
     if (!type) return;
@@ -222,11 +245,40 @@ export default function ActivityScreen(): React.JSX.Element {
                 <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
               </Card>
             </Pressable>
-            <Text variant="labelMd" color="tertiary" style={styles.todayLine}>
-              {todayCount === 0
-                ? 'No workouts logged today yet.'
-                : `${todayCount} workout${todayCount > 1 ? 's' : ''} logged today 🎉`}
+            <Text variant="labelSm" color="tertiary" style={styles.stepLabel}>
+              QUICK ADD
             </Text>
+            <View style={styles.quickGrid}>
+              {QUICK_ADDS.map((q) => (
+                <Pressable key={q.label} style={styles.quickCard} onPress={() => quickAdd(q)}>
+                  <Text style={styles.quickEmoji}>{q.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="labelMd" numberOfLines={1}>
+                      {q.label}
+                    </Text>
+                    <Text variant="labelSm" color="tertiary">
+                      +{POINTS.activity} pts
+                    </Text>
+                  </View>
+                  <Ionicons name="add" size={18} color={colors.brand.pine} />
+                </Pressable>
+              ))}
+            </View>
+            {justAdded ? (
+              <Text
+                variant="labelMd"
+                align="center"
+                style={{ color: colors.status.positive, marginTop: spacing.md }}
+              >
+                Added {justAdded} · +{POINTS.activity} pts 🎉
+              </Text>
+            ) : (
+              <Text variant="labelMd" color="tertiary" style={styles.todayLine}>
+                {todayCount === 0
+                  ? 'No activities logged today yet.'
+                  : `${todayCount} logged today 🎉`}
+              </Text>
+            )}
           </>
         ) : null}
 
@@ -346,6 +398,20 @@ const styles = StyleSheet.create({
   choiceIconPrimary: { backgroundColor: colors.brand.pine },
   todayLine: { marginTop: spacing.lg, textAlign: 'center' },
   stepLabel: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  quickCard: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.hairline,
+  },
+  quickEmoji: { fontSize: 22 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   typeCard: {
     width: '31%',
