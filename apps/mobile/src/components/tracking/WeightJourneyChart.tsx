@@ -74,14 +74,15 @@ export function WeightJourneyChart({
 
   const startY = y(startKg);
   const pts = reads.map((p) => ({ x: x(p.day), y: y(p.weightKg), kg: p.weightKg }));
-  // Begin the line at the starting weight (left edge), so it connects "Start" → day 1.
-  const linePts = pts.length ? [{ x: padL, y: startY }, ...pts] : [];
-  const linePoints = linePts.map((p) => `${p.x},${p.y}`).join(' ');
-  const areaPoints = linePts.length
+  // Markers = the starting weight (left edge) + every weigh-in. The line connects Start → day 1 → …
+  // and each marker gets a dot + a weight label.
+  const markers = pts.length ? [{ x: padL, y: startY, kg: startKg }, ...pts] : [];
+  const linePoints = markers.map((p) => `${p.x},${p.y}`).join(' ');
+  const areaPoints = markers.length
     ? [
-        `${linePts[0]!.x},${plotBottom}`,
-        ...linePts.map((p) => `${p.x},${p.y}`),
-        `${linePts[linePts.length - 1]!.x},${plotBottom}`,
+        `${markers[0]!.x},${plotBottom}`,
+        ...markers.map((p) => `${p.x},${p.y}`),
+        `${markers[markers.length - 1]!.x},${plotBottom}`,
       ].join(' ')
     : '';
 
@@ -119,7 +120,7 @@ export function WeightJourneyChart({
             ) : null}
 
             {/* Trend area + line (starts at the starting weight, connecting Start → day 1) */}
-            {linePts.length >= 2 ? (
+            {markers.length >= 2 ? (
               <>
                 <Polygon points={areaPoints} fill="rgba(18, 56, 43, 0.06)" />
                 <Polyline
@@ -144,8 +145,8 @@ export function WeightJourneyChart({
               strokeDasharray="3 4"
             />
 
-            {/* Each actual weigh-in as a clear point */}
-            {pts.map((p, i) => (
+            {/* A clear dot at Start + every weigh-in */}
+            {markers.map((p, i) => (
               <Circle
                 key={`p${i}`}
                 cx={p.x}
@@ -157,10 +158,13 @@ export function WeightJourneyChart({
               />
             ))}
 
-            {/* Label every point (values alternate above / below to reduce crowding) */}
-            {pts.map((p, i) => {
+            {/* Label Start + every point (values alternate above / below to reduce crowding) */}
+            {markers.map((p, i) => {
               const above = i % 2 === 0;
               const ly = Math.min(Math.max(above ? p.y - 9 : p.y + 16, 11), plotBottom + 12);
+              // Left/right-anchor near the edges so labels never clip (Start sits at the left edge).
+              const anchor =
+                p.x < padL + 14 ? 'start' : p.x > padL + plotW - 14 ? 'end' : 'middle';
               return (
                 <SvgText
                   key={`v${i}`}
@@ -169,7 +173,7 @@ export function WeightJourneyChart({
                   fontSize={9}
                   fontWeight="600"
                   fill={colors.brand.pine}
-                  textAnchor="middle"
+                  textAnchor={anchor}
                 >
                   {round(kgToDisplay(p.kg, unit), 0)}
                 </SvgText>
