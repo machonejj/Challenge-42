@@ -1,0 +1,5 @@
+# Netlify config for the Challenge42 web app. The dist folder is uploaded via the CLI (--dir);
+# this declares the serverless functions directory (the FatSecret food-search proxy).
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
