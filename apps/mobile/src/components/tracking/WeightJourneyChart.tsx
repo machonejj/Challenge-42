@@ -61,11 +61,12 @@ export function WeightJourneyChart({
   const first = reads.length ? reads[0]!.day : 1;
   const lastD = reads.length ? reads[reads.length - 1]!.day : 1;
   const single = first === lastD;
-  // A constant 2-day buffer on each side: points never touch the edges and the up/down slope always
-  // has room to breathe (also centers a lone reading).
-  const BUFFER = 2;
-  const domainStart = first - BUFFER;
-  const domainEnd = lastD + BUFFER;
+  // A small left margin keeps day 1 near the left edge, while a wider right buffer leaves room for
+  // the up/down trend to move (and keeps a lone reading off-center toward the left).
+  const LEFT_BUFFER = 0.5;
+  const RIGHT_BUFFER = 2;
+  const domainStart = first - LEFT_BUFFER;
+  const domainEnd = lastD + RIGHT_BUFFER;
   const x = (day: number): number =>
     padL + ((day - domainStart) / (domainEnd - domainStart)) * plotW;
   const y = (kg: number): number =>
