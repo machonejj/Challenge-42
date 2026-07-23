@@ -1,12 +1,13 @@
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '@challenge42/config';
-import type { LeaderRow } from '@/features/live/community';
+import type { LeaderRow, LeaderMetric } from '@/features/live/community';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { Avatar } from '@/components/ui/Avatar';
 import { Divider } from '@/components/ui/Divider';
 import { LiveDot } from '@/components/ui/LiveDot';
+import { formatThousands } from '@/lib/format';
 
 const MEDAL = ['#C9A65B', '#B9BDC4', '#C08457']; // gold / silver / bronze
 
@@ -22,8 +23,24 @@ function lbsText(lbs: number): string {
   return '0 lb';
 }
 
+function metricVal(e: LeaderRow, m: LeaderMetric): number {
+  if (m === 'steps') return e.stepsToday;
+  if (m === 'workouts') return e.activeMinToday;
+  return e.lbsLost;
+}
+function mainText(e: LeaderRow, m: LeaderMetric): string {
+  if (m === 'steps') return formatThousands(e.stepsToday);
+  if (m === 'workouts') return `${Math.round(e.activeMinToday)}`;
+  return lbsText(e.lbsLost);
+}
+function subText(e: LeaderRow, m: LeaderMetric): string {
+  if (m === 'steps') return 'steps today';
+  if (m === 'workouts') return 'min today';
+  return `${pctText(e.pctLost)} lost`;
+}
+
 /** One podium column (bigger + raised for 1st). */
-function Podium({ entry }: { entry: LeaderRow }): React.JSX.Element {
+function Podium({ entry, metric }: { entry: LeaderRow; metric: LeaderMetric }): React.JSX.Element {
   const first = entry.rank === 1;
   const size = first ? 76 : 60;
   return (
@@ -50,17 +67,17 @@ function Podium({ entry }: { entry: LeaderRow }): React.JSX.Element {
         {entry.isCurrentUser ? 'You' : entry.name}
       </Text>
       <Text variant="titleMd" style={{ color: colors.status.positive }}>
-        {lbsText(entry.lbsLost)}
+        {mainText(entry, metric)}
       </Text>
       <Text variant="labelSm" color="tertiary" numberOfLines={1}>
-        {pctText(entry.pctLost)}
+        {subText(entry, metric)}
       </Text>
     </View>
   );
 }
 
-function Row({ entry }: { entry: LeaderRow }): React.JSX.Element {
-  const lost = entry.pctLost > 0;
+function Row({ entry, metric }: { entry: LeaderRow; metric: LeaderMetric }): React.JSX.Element {
+  const positive = metricVal(entry, metric) > 0;
   return (
     <View style={[styles.row, entry.isCurrentUser && styles.currentRow]}>
       <Text variant="labelMd" color="tertiary" style={styles.rankNum}>
@@ -93,12 +110,12 @@ function Row({ entry }: { entry: LeaderRow }): React.JSX.Element {
       <View style={styles.right}>
         <Text
           variant="titleMd"
-          style={{ color: lost ? colors.status.positive : colors.text.tertiary }}
+          style={{ color: positive ? colors.status.positive : colors.text.tertiary }}
         >
-          {lbsText(entry.lbsLost)}
+          {mainText(entry, metric)}
         </Text>
         <Text variant="labelSm" color="tertiary">
-          {pctText(entry.pctLost)}
+          {subText(entry, metric)}
         </Text>
       </View>
     </View>
@@ -106,7 +123,13 @@ function Row({ entry }: { entry: LeaderRow }): React.JSX.Element {
 }
 
 /** A wonderful leaderboard: a top-3 podium with face photos, then the ranked list. */
-export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX.Element {
+export function Leaderboard({
+  rows,
+  metric = 'lbs',
+}: {
+  rows: readonly LeaderRow[];
+  metric?: LeaderMetric;
+}): React.JSX.Element {
   if (rows.length === 0) {
     return (
       <Card>
@@ -117,8 +140,12 @@ export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX
     );
   }
 
-  const top = rows.slice(0, 3);
-  const rest = rows.slice(3);
+  // Rank by the selected metric.
+  const ranked = [...rows]
+    .sort((a, b) => metricVal(b, metric) - metricVal(a, metric))
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+  const top = ranked.slice(0, 3);
+  const rest = ranked.slice(3);
   // Podium order: 2nd, 1st, 3rd (classic podium layout).
   const order = [top[1], top[0], top[2]].filter(Boolean) as LeaderRow[];
 
@@ -126,7 +153,7 @@ export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX
     <View style={{ gap: spacing.lg }}>
       <View style={styles.podiumRow}>
         {order.map((e) => (
-          <Podium key={e.userId} entry={e} />
+          <Podium key={e.userId} entry={e} metric={metric} />
         ))}
       </View>
 
@@ -136,7 +163,7 @@ export function Leaderboard({ rows }: { rows: readonly LeaderRow[] }): React.JSX
             {rest.map((entry, i) => (
               <View key={entry.userId}>
                 {i > 0 ? <Divider /> : null}
-                <Row entry={entry} />
+                <Row entry={entry} metric={metric} />
               </View>
             ))}
           </View>

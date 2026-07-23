@@ -11,11 +11,12 @@ export interface DemoPerson {
   pctLost: number;
   lbsLost: number;
   steps: number;
+  activeMin: number;
   meals: number;
   activeRecent: boolean;
 }
 
-const raw: Omit<DemoPerson, 'id' | 'avatarUrl'>[] = [
+const raw: Omit<DemoPerson, 'id' | 'avatarUrl' | 'activeMin'>[] = [
   {
     name: 'Marcus T.',
     state: 'TX',
@@ -109,11 +110,13 @@ const raw: Omit<DemoPerson, 'id' | 'avatarUrl'>[] = [
 ];
 
 const AVATAR_IMG = [12, 5, 9, 32, 20, 47, 33, 3, 25, 11];
+const ACTIVE_MIN = [45, 30, 20, 60, 25, 40, 15, 55, 35, 10];
 
 export const DEMO_PEOPLE: DemoPerson[] = raw.map((p, i) => ({
   ...p,
   id: `demo-${i}`,
   avatarUrl: `https://i.pravatar.cc/200?img=${AVATAR_IMG[i]}`,
+  activeMin: ACTIVE_MIN[i] ?? 0,
 }));
 
 export const DEMO_TOTALS = {

@@ -26,7 +26,9 @@ export async function searchFatSecret(
   const q = query.trim();
   if (q.length < 2) return [];
   try {
-    const res = await fetch(`/.netlify/functions/foodsearch?q=${encodeURIComponent(q)}`, { signal });
+    const res = await fetch(`/.netlify/functions/foodsearch?q=${encodeURIComponent(q)}`, {
+      signal,
+    });
     if (!res.ok) return [];
     const data = (await res.json()) as { foods?: ProxyFood[] };
     return (data.foods ?? [])

@@ -10,9 +10,16 @@ import { supabase } from '@/services/supabase/client';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
-import { useStepsStore, totalSteps } from '@/features/tracking/stepsStore';
+import { useStepsStore, totalSteps, todaySteps } from '@/features/tracking/stepsStore';
+import { useActivityStore } from '@/features/activity/activityStore';
 import { STATE_XY } from './usMapData';
 import { DEMO_PEOPLE, DEMO_TOTALS } from './demoPeople';
+
+function startOfTodayMs(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 export interface LeaderRow {
   userId: string;
@@ -22,9 +29,13 @@ export interface LeaderRow {
   avatarUrl: string | null;
   pctLost: number; // % of body weight lost (negative = gained)
   lbsLost: number; // exact pounds lost (negative = gained)
+  stepsToday: number;
+  activeMinToday: number;
   activeRecent: boolean;
   isCurrentUser: boolean;
 }
+
+export type LeaderMetric = 'lbs' | 'steps' | 'workouts';
 
 /** A dot on the US presence map — positioned at the challenger's state centroid (city-level privacy). */
 export interface PresenceDot {
@@ -44,6 +55,8 @@ interface RpcRow {
   avatar_url: string | null;
   pct_lost: number;
   lbs_lost: number;
+  steps_today: number;
+  workout_min_today: number;
   active_recent: boolean;
 }
 
@@ -166,6 +179,14 @@ export function useCommunity(): Community {
     })),
   );
 
+  const myStepsToday = useStepsStore((s) => todaySteps(s.entries, Date.now()));
+  const myActiveMin = useActivityStore((s) => {
+    const start = startOfTodayMs();
+    return s.sessions
+      .filter((a) => a.completedAtMs >= start)
+      .reduce((m, a) => m + a.durationMin, 0);
+  });
+
   const [remote, setRemote] = useState<RpcRow[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -192,6 +213,8 @@ export function useCommunity(): Community {
           avatarUrl: profile.avatarUrl ?? null,
           pctLost: pctLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
           lbsLost: lbsLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
+          stepsToday: myStepsToday,
+          activeMinToday: myActiveMin,
           activeRecent: true,
           isCurrentUser: true,
         }
@@ -208,6 +231,8 @@ export function useCommunity(): Community {
       avatarUrl: r.avatar_url ?? null,
       pctLost: r.pct_lost,
       lbsLost: r.lbs_lost ?? 0,
+      stepsToday: Number(r.steps_today) || 0,
+      activeMinToday: Number(r.workout_min_today) || 0,
       activeRecent: r.active_recent,
       isCurrentUser: userId != null && r.user_id === userId,
     }));
@@ -226,6 +251,8 @@ export function useCommunity(): Community {
     avatarUrl: d.avatarUrl,
     pctLost: d.pctLost,
     lbsLost: d.lbsLost,
+    stepsToday: d.steps,
+    activeMinToday: d.activeMin,
     activeRecent: d.activeRecent,
     isCurrentUser: false,
   }));
