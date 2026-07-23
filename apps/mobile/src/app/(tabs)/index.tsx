@@ -16,9 +16,11 @@ import { MetricCard } from '@/components/home/MetricCard';
 import { QuickAction } from '@/components/home/QuickAction';
 import { WeighInStatus } from '@/components/home/WeighInStatus';
 import { GoalsProgress } from '@/components/home/GoalsProgress';
+import { ChallengeDateBanner } from '@/components/home/ChallengeDateBanner';
 import { CommunityCounters } from '@/components/community/CommunityCounters';
 import { usePersonalizedHome } from '@/features/home/usePersonalizedHome';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { useChallengeStore } from '@/features/challenge/challengeStore';
 import { useWeightStore } from '@/features/tracking/weightStore';
 import { useStepsStore, todaySteps } from '@/features/tracking/stepsStore';
 import { useActivityStore } from '@/features/activity/activityStore';
@@ -59,6 +61,10 @@ export default function HomeScreen(): React.JSX.Element {
   const stepsGoal = useGoalsStore((s) => s.stepsGoal);
   const activityGoal = useGoalsStore((s) => s.activityMinutesGoal);
   const calorieGoal = useGoalsStore((s) => s.calorieGoal);
+  const challengeStart = useChallengeStore((s) => s.startDate);
+  const challengeLength = useChallengeStore((s) => s.lengthDays);
+  const profileStart = useProfileStore((s) => s.challengeStartDate);
+  const effectiveStart = challengeStart ?? (profileStart ? profileStart.slice(0, 10) : null);
 
   const weighedToday = useMemo(
     () => weightEntries.some((e) => dayKey(e.measuredAtMs) === dayKey(Date.now())),
@@ -127,6 +133,10 @@ export default function HomeScreen(): React.JSX.Element {
               </Text>
             </View>
           ) : null}
+          <View style={styles.banner}>
+            <ChallengeDateBanner startDate={effectiveStart} lengthDays={challengeLength} />
+          </View>
+
           <View style={styles.weighIn}>
             <WeighInStatus
               done={weighedToday}
@@ -256,6 +266,7 @@ const styles = StyleSheet.create({
     marginTop: spacing['2xl'],
   },
   firstSection: { marginTop: 0 },
+  banner: { marginBottom: spacing.lg },
   weighIn: { marginBottom: spacing.lg },
   section: { marginTop: spacing['2xl'] },
   todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xl },

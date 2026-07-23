@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from '@/services/supabase/client';
 import { startCloudSync, stopCloudSync } from '@/services/sync/cloudSync';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useAccessStore } from '@/features/admin/accessStore';
+import { useChallengeStore } from '@/features/challenge/challengeStore';
 import { syncStepsFromDevice } from '@/features/health/syncSteps';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
@@ -77,6 +78,13 @@ function RootNavigator(): React.JSX.Element {
   // Pull today's steps from the phone's step counter (no-op on web / when the user hasn't opted in).
   useEffect(() => {
     if (authStatus === 'signedIn') void syncStepsFromDevice();
+  }, [authStatus, userId]);
+
+  // Load the shared challenge window (admin-set start date + length).
+  useEffect(() => {
+    if (isSupabaseConfigured && authStatus === 'signedIn') {
+      void useChallengeStore.getState().refresh();
+    }
   }, [authStatus, userId]);
 
   const ready = authStatus !== 'restoring' && onbHydrated && profileHydrated;

@@ -10,6 +10,7 @@ import type { HomeSnapshot } from '@challenge42/types';
 import { useHomeSnapshot } from './useHomeSnapshot';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useFoodLogStore, todayFoodTotals } from '@/features/tracking/foodLogStore';
+import { useChallengeStore } from '@/features/challenge/challengeStore';
 
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -35,6 +36,9 @@ export function usePersonalizedHome() {
   );
 
   const foodEntries = useFoodLogStore((s) => s.entries);
+  // The shared, admin-set challenge window wins over the per-user enrollment date when present.
+  const globalStart = useChallengeStore((s) => s.startDate);
+  const globalLength = useChallengeStore((s) => s.lengthDays);
 
   const data = useMemo<HomeSnapshot | undefined>(() => {
     const base = query.data;
@@ -46,9 +50,9 @@ export function usePersonalizedHome() {
     const currentKg = profile.latestWeightKg ?? startKg;
     const rec = profile.recommendation;
 
-    const dayNumber = profile.challengeStartDate
-      ? challengeDayNumber(profile.challengeStartDate, todayISODate(), profile.challengeLengthDays)
-      : 1;
+    const effStart = globalStart ?? profile.challengeStartDate;
+    const totalDays = globalStart ? globalLength : profile.challengeLengthDays;
+    const dayNumber = effStart ? challengeDayNumber(effStart, todayISODate(), totalDays) : 1;
 
     // Calorie target: real recommendation, or maintenance ceiling for safe-review users.
     const target =
@@ -61,7 +65,7 @@ export function usePersonalizedHome() {
       challenge: {
         name: profile.challengeName ?? base.challenge.name,
         dayNumber,
-        totalDays: profile.challengeLengthDays,
+        totalDays,
       },
       greetingName: profile.firstName ?? base.greetingName,
       // A brand-new challenger genuinely has no streak/score history yet.
@@ -77,7 +81,7 @@ export function usePersonalizedHome() {
         },
       },
     };
-  }, [query.data, profile, foodEntries]);
+  }, [query.data, profile, foodEntries, globalStart, globalLength]);
 
   return { ...query, data };
 }

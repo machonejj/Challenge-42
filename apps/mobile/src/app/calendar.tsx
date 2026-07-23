@@ -8,33 +8,32 @@ import { colors, radius, spacing, layout } from '@challenge42/config';
 import { kgToDisplay, round } from '@challenge42/domain';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
-import { useHistory, keyForYMD, dateKey, type DayData } from '@/features/history/dayHistory';
+import { useHistory, dateKey, type DayData } from '@/features/history/dayHistory';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { useGoalsStore } from '@/features/goals/goalsStore';
+import { useChallengeStore } from '@/features/challenge/challengeStore';
 import { formatThousands } from '@/lib/format';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
+const DAY = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
-const CAL = '#C9A65B'; // calories
-const WGT = '#12382B'; // weigh-in
-const STP = '#5B7FA6'; // steps
-const ACT = '#2F8F5B'; // activity
+const CAL = '#C9A65B';
+const WGT = '#12382B';
+const STP = '#5B7FA6';
+const ACT = '#2F8F5B';
+
+function midnight(dateStr: string): number {
+  return new Date(`${dateStr}T00:00:00`).getTime();
+}
+function weekStartMs(ms: number): number {
+  const d = new Date(ms);
+  return ms - d.getDay() * DAY; // back to Sunday
+}
+function fmtRange(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 export default function CalendarScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -45,29 +44,36 @@ export default function CalendarScreen(): React.JSX.Element {
   const calorieGoal = useGoalsStore((s) => s.calorieGoal);
   const calTarget = calorieGoal ?? recommendedCal;
 
+  const gStart = useChallengeStore((s) => s.startDate);
+  const gLen = useChallengeStore((s) => s.lengthDays);
+  const pStart = useProfileStore((s) => s.challengeStartDate);
+  const startStr = gStart ?? (pStart ? pStart.slice(0, 10) : null);
+
   const now = new Date();
-  const todayKey = dateKey(now.getTime());
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
-  const [selected, setSelected] = useState(todayKey);
+  const startMs = startStr ? midnight(startStr) : todayStart;
+  const lengthDays = gLen;
+  const endMs = startMs + (lengthDays - 1) * DAY;
 
-  const isCurrentMonth = view.y === now.getFullYear() && view.m === now.getMonth();
-  const firstWeekday = new Date(view.y, view.m, 1).getDay();
-  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
-  const cells: (number | null)[] = [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
+  // The grid: one buffer week before the start week through one buffer week after the end week.
+  const gridStart = weekStartMs(startMs) - 7 * DAY;
+  const lastCell = weekStartMs(endMs) + 7 * DAY + 6 * DAY;
+  const totalCells = Math.round((lastCell - gridStart) / DAY) + 1;
+  const cells = Array.from({ length: totalCells }, (_, i) => gridStart + i * DAY);
+  const weeks: number[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
-  const shiftMonth = (delta: number): void => {
-    const d = new Date(view.y, view.m + delta, 1);
-    setView({ y: d.getFullYear(), m: d.getMonth() });
-  };
+  const todayKey = dateKey(todayStart);
+  const initialSel =
+    todayStart >= gridStart && todayStart <= lastCell ? todayKey : dateKey(startMs);
+  const [selected, setSelected] = useState(initialSel);
 
   const detail: DayData | undefined = history.get(selected);
-  const selDate = new Date(`${selected}T00:00:00`);
+  const selMs = midnight(selected);
   const selIsToday = selected === todayKey;
-  const selInFuture = selDate.getTime() > new Date(todayKey + 'T00:00:00').getTime();
+  const selInFuture = selMs > todayStart;
+  const selDayNum =
+    selMs >= startMs && selMs <= endMs ? Math.floor((selMs - startMs) / DAY) + 1 : null;
 
   return (
     <View style={styles.root}>
@@ -81,7 +87,7 @@ export default function CalendarScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text variant="titleLg">History</Text>
+          <Text variant="titleLg">Calendar</Text>
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
@@ -92,28 +98,14 @@ export default function CalendarScreen(): React.JSX.Element {
           </Pressable>
         </View>
 
-        <Card style={{ gap: spacing.md }}>
-          <View style={styles.monthRow}>
-            <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} style={styles.navBtn}>
-              <Ionicons name="chevron-back" size={18} color={colors.text.secondary} />
-            </Pressable>
-            <Text variant="labelMd">
-              {MONTHS[view.m]} {view.y}
-            </Text>
-            <Pressable
-              onPress={() => shiftMonth(1)}
-              hitSlop={8}
-              style={styles.navBtn}
-              disabled={isCurrentMonth}
-            >
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={isCurrentMonth ? colors.border.strong : colors.text.secondary}
-              />
-            </Pressable>
-          </View>
+        <View style={styles.rangeChip}>
+          <Ionicons name="flag" size={14} color={colors.brand.gold} />
+          <Text variant="labelMd">
+            {Math.round(lengthDays / 7)}-week challenge · {fmtRange(startMs)} – {fmtRange(endMs)}
+          </Text>
+        </View>
 
+        <Card style={{ gap: spacing.sm, marginTop: spacing.md }}>
           <View style={styles.weekRow}>
             {WEEKDAYS.map((w, i) => (
               <View key={i} style={styles.cell}>
@@ -124,48 +116,54 @@ export default function CalendarScreen(): React.JSX.Element {
             ))}
           </View>
 
-          <View style={styles.grid}>
-            {cells.map((day, i) => {
-              if (day == null) return <View key={`b${i}`} style={styles.cell} />;
-              const k = keyForYMD(view.y, view.m, day);
-              const d = history.get(k);
-              const isToday = k === todayKey;
-              const isSel = k === selected;
-              const future = new Date(`${k}T00:00:00`).getTime() > todayStart;
-              return (
-                <Pressable
-                  key={k}
-                  style={styles.cell}
-                  onPress={() => setSelected(k)}
-                  disabled={future}
-                >
-                  <View
-                    style={[styles.dayInner, isSel && styles.daySel, isToday && styles.dayToday]}
-                  >
-                    <Text
-                      variant="labelSm"
-                      style={{
-                        color: future
-                          ? colors.border.strong
-                          : isSel
-                            ? colors.text.onPine
-                            : colors.text.primary,
-                        fontWeight: isToday ? '700' : '500',
-                      }}
+          {weeks.map((week, wi) => (
+            <View key={wi} style={styles.weekRow}>
+              {week.map((ms) => {
+                const k = dateKey(ms);
+                const d = history.get(k);
+                const isToday = k === todayKey;
+                const isSel = k === selected;
+                const inChallenge = ms >= startMs && ms <= endMs;
+                const future = ms > todayStart;
+                const isStart = ms === startMs;
+                const isEnd = ms === endMs;
+                return (
+                  <Pressable key={k} style={styles.cell} onPress={() => setSelected(k)}>
+                    <View
+                      style={[
+                        styles.dayInner,
+                        inChallenge && styles.dayInChallenge,
+                        isSel && styles.daySel,
+                        isToday && !isSel && styles.dayToday,
+                      ]}
                     >
-                      {day}
-                    </Text>
-                    <View style={styles.dots}>
-                      {d?.hasFood ? <Dot color={CAL} on={isSel} /> : null}
-                      {d?.hasWeight ? <Dot color={WGT} on={isSel} /> : null}
-                      {d?.hasSteps ? <Dot color={STP} on={isSel} /> : null}
-                      {d?.hasActivity ? <Dot color={ACT} on={isSel} /> : null}
+                      <Text
+                        variant="labelSm"
+                        style={{
+                          color: isSel
+                            ? colors.text.onPine
+                            : future
+                              ? colors.text.tertiary
+                              : inChallenge
+                                ? colors.text.primary
+                                : colors.text.tertiary,
+                          fontWeight: isToday || isStart || isEnd ? '700' : '500',
+                        }}
+                      >
+                        {new Date(ms).getDate()}
+                      </Text>
+                      <View style={styles.dots}>
+                        {d?.hasFood ? <Dot color={CAL} on={isSel} /> : null}
+                        {d?.hasWeight ? <Dot color={WGT} on={isSel} /> : null}
+                        {d?.hasSteps ? <Dot color={STP} on={isSel} /> : null}
+                        {d?.hasActivity ? <Dot color={ACT} on={isSel} /> : null}
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
 
           <View style={styles.legend}>
             <Legend color={CAL} label="Calories" />
@@ -173,14 +171,18 @@ export default function CalendarScreen(): React.JSX.Element {
             <Legend color={STP} label="Steps" />
             <Legend color={ACT} label="Activity" />
           </View>
+          <Text variant="labelSm" color="tertiary" align="center">
+            Shaded days are the 6-week challenge; lighter days are the buffer weeks.
+          </Text>
         </Card>
 
         <Text variant="labelSm" color="tertiary" style={styles.detailLabel}>
           {selIsToday
             ? 'TODAY'
-            : selDate
+            : new Date(selMs)
                 .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
                 .toUpperCase()}
+          {selDayNum ? ` · DAY ${selDayNum}` : ''}
         </Text>
 
         {selInFuture ? (
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   close: {
     width: 36,
@@ -313,17 +315,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  navBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface.sunken,
+  rangeChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(201, 166, 91, 0.12)',
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   weekRow: { flexDirection: 'row' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 3 },
   dayInner: {
     width: 40,
@@ -333,6 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
+  dayInChallenge: { backgroundColor: 'rgba(18, 56, 43, 0.06)' },
   daySel: { backgroundColor: colors.brand.pine },
   dayToday: { borderWidth: 1.5, borderColor: colors.brand.gold },
   dots: { flexDirection: 'row', gap: 2, height: 5 },
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.md,
     justifyContent: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   detailLabel: { marginTop: spacing['2xl'], marginBottom: spacing.sm },

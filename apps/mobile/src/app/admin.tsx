@@ -19,15 +19,35 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { Divider } from '@/components/ui/Divider';
 import { useAccessStore } from '@/features/admin/accessStore';
+import { useChallengeStore } from '@/features/challenge/challengeStore';
 import {
   listMembers,
   listAllowlist,
   addAllowlist,
   removeAllowlist,
   setDisabled,
+  setChallenge,
   type Member,
   type AllowlistEntry,
 } from '@/features/admin/adminService';
+
+const DAY = 24 * 60 * 60 * 1000;
+function toYMD(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
+}
+function fromYMD(s: string | null): number {
+  if (!s) return new Date().setHours(0, 0, 0, 0);
+  return new Date(`${s}T00:00:00`).getTime();
+}
+function prettyDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 export default function AdminScreen(): React.JSX.Element {
   const router = useRouter();
@@ -40,6 +60,30 @@ export default function AdminScreen(): React.JSX.Element {
   const [busy, setBusy] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const challengeStart = useChallengeStore((s) => s.startDate);
+  const challengeLength = useChallengeStore((s) => s.lengthDays);
+  const [startMs, setStartMs] = useState(() => fromYMD(challengeStart));
+  const [weeks, setWeeks] = useState(() => Math.max(Math.round(challengeLength / 7), 1));
+  const [savedAt, setSavedAt] = useState(false);
+
+  useEffect(() => {
+    setStartMs(fromYMD(challengeStart));
+    setWeeks(Math.max(Math.round(challengeLength / 7), 1));
+  }, [challengeStart, challengeLength]);
+
+  const saveChallenge = async (): Promise<void> => {
+    setBusy('challenge');
+    setError(null);
+    setSavedAt(false);
+    const err = await setChallenge(toYMD(startMs), weeks * 7);
+    if (err) setError(err);
+    else {
+      await useChallengeStore.getState().refresh();
+      setSavedAt(true);
+    }
+    setBusy(null);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,6 +183,73 @@ export default function AdminScreen(): React.JSX.Element {
             </Text>
           </View>
         ) : null}
+
+        {/* Challenge dates */}
+        <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
+          CHALLENGE
+        </Text>
+        <Card style={{ gap: spacing.md }}>
+          <Text variant="bodyMd" color="secondary">
+            Everyone runs the same window. Set when the challenge begins.
+          </Text>
+          <View style={styles.dateBox}>
+            <Text variant="labelSm" color="tertiary">
+              START DATE
+            </Text>
+            <Text variant="titleLg">{prettyDate(startMs)}</Text>
+          </View>
+          <View style={styles.stepRow}>
+            {[
+              { l: '−1 wk', d: -7 },
+              { l: '−1 d', d: -1 },
+              { l: '+1 d', d: 1 },
+              { l: '+1 wk', d: 7 },
+            ].map((b) => (
+              <Pressable
+                key={b.l}
+                onPress={() => setStartMs((m) => m + b.d * DAY)}
+                style={styles.stepChip}
+              >
+                <Text variant="labelSm">{b.l}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.lenRow}>
+            <Text variant="labelMd" style={{ flex: 1 }}>
+              Length
+            </Text>
+            <Pressable
+              onPress={() => setWeeks((w) => Math.max(w - 1, 1))}
+              style={styles.lenBtn}
+              accessibilityLabel="Fewer weeks"
+            >
+              <Ionicons name="remove" size={18} color={colors.text.onPine} />
+            </Pressable>
+            <Text variant="labelMd" style={styles.lenValue}>
+              {weeks} wk
+            </Text>
+            <Pressable
+              onPress={() => setWeeks((w) => Math.min(w + 1, 12))}
+              style={styles.lenBtn}
+              accessibilityLabel="More weeks"
+            >
+              <Ionicons name="add" size={18} color={colors.text.onPine} />
+            </Pressable>
+          </View>
+          <Text variant="labelSm" color="tertiary">
+            Day 1 is {prettyDate(startMs)} · ends {prettyDate(startMs + (weeks * 7 - 1) * DAY)}
+          </Text>
+          <Button
+            label="Save challenge dates"
+            onPress={saveChallenge}
+            loading={busy === 'challenge'}
+          />
+          {savedAt ? (
+            <Text variant="labelSm" style={{ color: colors.status.positive }}>
+              Saved — everyone’s dates are updated.
+            </Text>
+          ) : null}
+        </Card>
 
         {/* Invite allowlist */}
         <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
@@ -279,6 +390,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionLabel: { marginTop: spacing['2xl'], marginBottom: spacing.sm },
+  dateBox: {
+    backgroundColor: colors.surface.sunken,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: 2,
+    alignItems: 'center',
+  },
+  stepRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' },
+  stepChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface.sunken,
+  },
+  lenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  lenBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brand.pine,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lenValue: { minWidth: 56, textAlign: 'center' },
   errorBox: {
     backgroundColor: 'rgba(184, 62, 62, 0.08)',
     borderRadius: radius.md,

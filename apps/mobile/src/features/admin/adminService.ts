@@ -89,3 +89,13 @@ export async function removeAllowlist(email: string): Promise<string | null> {
   const { error } = await supabase.rpc('admin_remove_allowlist', { p_email: email });
   return error ? error.message : null;
 }
+
+/** Set the shared challenge start date ('YYYY-MM-DD') and length in days. */
+export async function setChallenge(startDate: string, lengthDays: number): Promise<string | null> {
+  if (!supabase) return 'Cloud backend not configured.';
+  const { error } = await supabase.rpc('admin_set_challenge', {
+    p_start: startDate,
+    p_length: lengthDays,
+  });
+  return error ? error.message : null;
+}
