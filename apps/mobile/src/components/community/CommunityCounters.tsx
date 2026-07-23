@@ -21,7 +21,7 @@ function Stat({ icon, value, label }: { icon: IconName; value: string; label: st
       <Text variant="titleLg" color="gold" numberOfLines={1} style={styles.value}>
         {value}
       </Text>
-      <Text variant="labelSm" color="secondary">
+      <Text variant="labelSm" color="onPineMuted">
         {label}
       </Text>
     </View>
