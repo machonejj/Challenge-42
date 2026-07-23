@@ -89,6 +89,24 @@ export function WeightJourneyChart({
   const label = (kg: number): string => `${round(kgToDisplay(kg, unit), 0)} ${unit}`;
   const gridYs = [0.33, 0.66].map((f) => padT + f * plotH);
 
+  // Which markers get a value label: Start + latest always; middle ones only when they clear a
+  // minimum horizontal gap, so a crunched (many-day) chart never piles numbers on top of each other.
+  // Every dot still renders regardless.
+  const LABEL_GAP = 26;
+  const showLabel = markers.map(() => false);
+  if (markers.length) {
+    showLabel[0] = true;
+    showLabel[markers.length - 1] = true;
+    let lastX = markers[0]!.x;
+    const lastX2 = markers[markers.length - 1]!.x;
+    for (let i = 1; i < markers.length - 1; i += 1) {
+      if (markers[i]!.x - lastX >= LABEL_GAP && lastX2 - markers[i]!.x >= LABEL_GAP) {
+        showLabel[i] = true;
+        lastX = markers[i]!.x;
+      }
+    }
+  }
+
   return (
     <View style={styles.container} onLayout={onLayout}>
       {width > 0 ? (
@@ -158,8 +176,9 @@ export function WeightJourneyChart({
               />
             ))}
 
-            {/* Label Start + every point (values alternate above / below to reduce crowding) */}
+            {/* Value labels (Start + latest always; middle ones thinned when crunched) */}
             {markers.map((p, i) => {
+              if (!showLabel[i]) return null;
               const above = i % 2 === 0;
               const ly = Math.min(Math.max(above ? p.y - 9 : p.y + 16, 11), plotBottom + 12);
               // Left/right-anchor near the edges so labels never clip (Start sits at the left edge).
