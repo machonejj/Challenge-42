@@ -57,14 +57,19 @@ function PostCard({
           />
         ) : null}
       </View>
-      <Image
-        source={{ uri: post.imageUrl }}
-        style={{ width, height: width }}
-        contentFit="cover"
-        transition={150}
-      />
+      {post.kind === 'photo' && post.imageUrl ? (
+        <Image
+          source={{ uri: post.imageUrl }}
+          style={{ width, height: width }}
+          contentFit="cover"
+          transition={150}
+        />
+      ) : null}
       {post.caption ? (
-        <Text variant="bodyMd" style={styles.caption}>
+        <Text
+          variant={post.kind === 'tip' ? 'bodyLg' : 'bodyMd'}
+          style={post.kind === 'tip' ? styles.tipBody : styles.caption}
+        >
           {post.caption}
         </Text>
       ) : null}
@@ -98,7 +103,7 @@ export default function CommunityScreen(): React.JSX.Element {
           The kitchen table
         </Text>
         <Text variant="bodyMd" color="secondary" style={styles.subtitle}>
-          Share the meals that keep you going — and see what everyone else is cooking.
+          Meal photos, prep ideas, and the tips that keep everyone going — pulled up a chair.
         </Text>
 
         <View style={styles.counters}>
@@ -106,14 +111,14 @@ export default function CommunityScreen(): React.JSX.Element {
         </View>
 
         <Button
-          label="Share a meal photo"
-          icon="camera-outline"
+          label="Share a photo or tip"
+          icon="add"
           onPress={() => router.push('/post-meal')}
           style={styles.shareBtn}
         />
 
         <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
-          MEAL BOARD
+          THE BOARD
         </Text>
 
         {loading && posts.length === 0 ? (
@@ -124,7 +129,7 @@ export default function CommunityScreen(): React.JSX.Element {
           <Card style={styles.centered}>
             <Ionicons name="images-outline" size={26} color={colors.brand.pine} />
             <Text variant="titleMd" align="center" style={{ marginTop: spacing.md }}>
-              No meals yet
+              Nothing shared yet
             </Text>
             <Text
               variant="bodyMd"
@@ -132,7 +137,7 @@ export default function CommunityScreen(): React.JSX.Element {
               align="center"
               style={{ marginTop: spacing.xs }}
             >
-              Be the first to share a meal that keeps you on track.
+              Be the first — share a meal photo or a tip that’s working for you.
             </Text>
           </Card>
         ) : (
@@ -165,4 +170,5 @@ const styles = StyleSheet.create({
   post: { overflow: 'hidden' },
   postHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg },
   caption: { padding: spacing.lg },
+  tipBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
 });

@@ -12,7 +12,7 @@ import { TextField } from '@/components/ui/TextField';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { pickImageFile, uploadImage, canPickImage } from '@/features/media/imageUpload';
-import { createMealPost } from '@/features/board/mealBoard';
+import { createMealPost, type PostKind } from '@/features/board/mealBoard';
 
 export default function PostMeal(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -21,6 +21,7 @@ export default function PostMeal(): React.JSX.Element {
   const authorName = useProfileStore((s) => s.firstName ?? s.displayName ?? 'Challenger');
   const authorAvatar = useProfileStore((s) => s.avatarUrl);
 
+  const [mode, setMode] = useState<PostKind>('photo');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
@@ -36,19 +37,26 @@ export default function PostMeal(): React.JSX.Element {
     }
   };
 
+  const canShare = mode === 'photo' ? Boolean(file) : caption.trim().length > 0;
+
   const share = async (): Promise<void> => {
-    if (!file || !userId) return;
+    if (!userId || !canShare) return;
     setBusy(true);
     setError(null);
-    const url = await uploadImage('meal-photos', userId, file);
-    if (!url) {
-      setError('Upload failed. Please try again.');
-      setBusy(false);
-      return;
+
+    let imageUrl: string | null = null;
+    if (mode === 'photo') {
+      imageUrl = await uploadImage('meal-photos', userId, file as File);
+      if (!imageUrl) {
+        setError('Upload failed. Please try again.');
+        setBusy(false);
+        return;
+      }
     }
     const err = await createMealPost({
       userId,
-      imageUrl: url,
+      kind: mode,
+      imageUrl,
       caption: caption.trim() || null,
       authorName,
       authorAvatar,
@@ -68,7 +76,7 @@ export default function PostMeal(): React.JSX.Element {
     >
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Text variant="titleMd">Share a meal</Text>
+        <Text variant="titleMd">Share to the board</Text>
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
@@ -80,62 +88,102 @@ export default function PostMeal(): React.JSX.Element {
       </View>
 
       <View style={styles.content}>
-        {!canPickImage() ? (
-          <View style={styles.notice}>
-            <Text variant="bodyMd" color="secondary">
-              Photo posting is available on the web app for now. Open the challenge in your browser
-              to share a meal.
-            </Text>
-          </View>
-        ) : (
-          <>
-            <Pressable style={styles.dropZone} onPress={choose} accessibilityRole="button">
-              {preview ? (
-                <Image source={{ uri: preview }} style={styles.preview} contentFit="cover" />
-              ) : (
-                <View style={styles.dropInner}>
-                  <Ionicons name="camera-outline" size={30} color={colors.brand.pine} />
-                  <Text variant="labelMd" color="secondary" style={{ marginTop: spacing.sm }}>
-                    Choose a photo
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-            {preview ? (
-              <Pressable onPress={choose} style={styles.replace}>
-                <Text variant="labelSm" color="secondary">
-                  Choose a different photo
+        <View style={styles.segmented}>
+          {[
+            { v: 'photo' as PostKind, label: 'Photo', icon: 'camera-outline' as const },
+            { v: 'tip' as PostKind, label: 'Tip', icon: 'bulb-outline' as const },
+          ].map((o) => {
+            const on = mode === o.v;
+            return (
+              <Pressable
+                key={o.v}
+                onPress={() => setMode(o.v)}
+                style={[styles.seg, on && styles.segOn]}
+              >
+                <Ionicons
+                  name={o.icon}
+                  size={16}
+                  color={on ? colors.text.onPine : colors.text.secondary}
+                />
+                <Text
+                  variant="labelSm"
+                  style={{ color: on ? colors.text.onPine : colors.text.secondary }}
+                >
+                  {o.label}
                 </Text>
               </Pressable>
-            ) : null}
+            );
+          })}
+        </View>
 
-            <View style={{ marginTop: spacing.lg }}>
-              <TextField
-                label="CAPTION (OPTIONAL)"
-                value={caption}
-                onChangeText={setCaption}
-                placeholder="What is it? Any wins to share?"
-              />
-            </View>
-
-            {error ? (
-              <Text
-                variant="labelSm"
-                style={{ color: colors.status.danger, marginTop: spacing.sm }}
-              >
-                {error}
+        {mode === 'photo' ? (
+          !canPickImage() ? (
+            <View style={styles.notice}>
+              <Text variant="bodyMd" color="secondary">
+                Photo posting is available on the web app for now. Switch to “Tip” to share a
+                written idea, or open the challenge in your browser to post a photo.
               </Text>
-            ) : null}
-
-            <Button
-              label="Share to the board"
-              onPress={share}
-              disabled={!file}
-              loading={busy}
-              style={{ marginTop: spacing.xl }}
+            </View>
+          ) : (
+            <>
+              <Pressable style={styles.dropZone} onPress={choose} accessibilityRole="button">
+                {preview ? (
+                  <Image source={{ uri: preview }} style={styles.preview} contentFit="cover" />
+                ) : (
+                  <View style={styles.dropInner}>
+                    <Ionicons name="camera-outline" size={30} color={colors.brand.pine} />
+                    <Text variant="labelMd" color="secondary" style={{ marginTop: spacing.sm }}>
+                      Choose a photo
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+              {preview ? (
+                <Pressable onPress={choose} style={styles.replace}>
+                  <Text variant="labelSm" color="secondary">
+                    Choose a different photo
+                  </Text>
+                </Pressable>
+              ) : null}
+              <View style={{ marginTop: spacing.lg }}>
+                <TextField
+                  label="CAPTION (OPTIONAL)"
+                  value={caption}
+                  onChangeText={setCaption}
+                  placeholder="What is it? Any wins to share?"
+                />
+              </View>
+            </>
+          )
+        ) : (
+          <View style={{ marginTop: spacing.xs }}>
+            <TextField
+              label="YOUR TIP"
+              value={caption}
+              onChangeText={setCaption}
+              placeholder="Share a meal-prep idea, cooking steps, or a niche thing that worked for you…"
+              multiline
+              numberOfLines={6}
             />
-          </>
+            <Text variant="labelSm" color="tertiary" style={{ marginTop: spacing.sm }}>
+              Recipes, batch-cooking hacks, swaps, restaurant orders — anything that helps the crew.
+            </Text>
+          </View>
         )}
+
+        {error ? (
+          <Text variant="labelSm" style={{ color: colors.status.danger, marginTop: spacing.sm }}>
+            {error}
+          </Text>
+        ) : null}
+
+        <Button
+          label="Share to the board"
+          onPress={share}
+          disabled={!canShare}
+          loading={busy}
+          style={{ marginTop: spacing.xl }}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -159,6 +207,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { paddingHorizontal: layout.screenGutter },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface.sunken,
+    borderRadius: radius.pill,
+    padding: 3,
+    gap: 2,
+    marginBottom: spacing.lg,
+  },
+  seg: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+  },
+  segOn: { backgroundColor: colors.brand.pine },
   notice: {
     backgroundColor: colors.surface.sunken,
     borderRadius: radius.md,

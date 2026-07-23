@@ -86,9 +86,22 @@ export default function TrackScreen(): React.JSX.Element {
         <Text variant="labelSm" color="gold">
           TRACK
         </Text>
-        <Text variant="titleLg" style={styles.title}>
-          Your progress
-        </Text>
+        <View style={styles.titleRow}>
+          <Text variant="titleLg" style={styles.title}>
+            Your progress
+          </Text>
+          <Pressable
+            onPress={() => router.push('/calendar')}
+            hitSlop={8}
+            style={styles.historyBtn}
+            accessibilityLabel="Open history calendar"
+          >
+            <Ionicons name="calendar-outline" size={18} color={colors.brand.pine} />
+            <Text variant="labelSm" style={{ color: colors.brand.pine }}>
+              History
+            </Text>
+          </Pressable>
+        </View>
 
         {summary.numbersHidden ? (
           <Card style={styles.softCard}>
@@ -283,6 +296,16 @@ export default function TrackScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   title: { marginTop: spacing.xs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  historyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface.sunken,
+  },
   softCard: { marginTop: spacing.xl },
   softBtn: { marginTop: spacing.xl, alignSelf: 'flex-start' },
   emptyCard: { marginTop: spacing.xl, alignItems: 'center', paddingVertical: spacing['2xl'] },

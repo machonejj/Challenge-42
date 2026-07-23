@@ -6,10 +6,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/services/supabase/client';
 
+export type PostKind = 'photo' | 'tip';
+
 export interface MealPost {
   id: string;
   userId: string;
-  imageUrl: string;
+  kind: PostKind;
+  imageUrl: string | null;
   caption: string | null;
   authorName: string | null;
   authorAvatar: string | null;
@@ -27,7 +30,8 @@ export async function listMealPosts(limit = 50): Promise<MealPost[]> {
   return (data as Record<string, unknown>[]).map((r) => ({
     id: r.id as string,
     userId: r.user_id as string,
-    imageUrl: r.image_url as string,
+    kind: ((r.kind as string) === 'tip' ? 'tip' : 'photo') as PostKind,
+    imageUrl: (r.image_url as string) ?? null,
     caption: (r.caption as string) ?? null,
     authorName: (r.author_name as string) ?? null,
     authorAvatar: (r.author_avatar as string) ?? null,
@@ -37,14 +41,16 @@ export async function listMealPosts(limit = 50): Promise<MealPost[]> {
 
 export async function createMealPost(input: {
   userId: string;
-  imageUrl: string;
+  kind: PostKind;
+  imageUrl: string | null;
   caption: string | null;
   authorName: string | null;
   authorAvatar: string | null;
 }): Promise<string | null> {
-  if (!supabase) return 'Photo sharing needs the cloud backend.';
+  if (!supabase) return 'Sharing needs the cloud backend.';
   const { error } = await supabase.from('meal_posts').insert({
     user_id: input.userId,
+    kind: input.kind,
     image_url: input.imageUrl,
     caption: input.caption,
     author_name: input.authorName,

@@ -46,9 +46,17 @@ export function WeightJourneyChart({
   const plotBottom = padT + plotH;
 
   const reads = series.filter((p) => p.hasReading);
-  const vals = reads.length ? reads.map((p) => p.weightKg) : [startKg];
+  // Plot the SMOOTHED trend (same EWMA as the "Trend weight" headline, alpha 0.1), not raw readings,
+  // so the line matches the number and a single heavy day never sends it lurching up or down.
+  const alpha = 0.1;
+  let t: number | null = null;
+  const trend = reads.map((p) => {
+    t = t == null ? p.weightKg : t + alpha * (p.weightKg - t);
+    return { day: p.day, weightKg: t };
+  });
+  const vals = trend.length ? trend.map((p) => p.weightKg) : [startKg];
 
-  // Frame vertically between start (top) and goal (bottom), expanding for any readings beyond them.
+  // Frame vertically between start (top) and goal (bottom), expanding for any trend beyond them.
   const top = Math.max(startKg, ...vals);
   const bot = Math.min(...(targetKg != null ? [targetKg] : []), ...vals);
   const span = Math.max(top - bot, Math.max(startKg * 0.03, 1));
@@ -56,8 +64,8 @@ export function WeightJourneyChart({
   const yMax = top + m;
   const yMin = bot - m;
 
-  const first = reads.length ? reads[0]!.day : 1;
-  const lastD = reads.length ? reads[reads.length - 1]!.day : 1;
+  const first = trend.length ? trend[0]!.day : 1;
+  const lastD = trend.length ? trend[trend.length - 1]!.day : 1;
   const single = first === lastD;
   const x = (day: number): number =>
     single ? padL + plotW / 2 : padL + ((day - first) / (lastD - first)) * plotW;
@@ -65,7 +73,7 @@ export function WeightJourneyChart({
     Math.min(Math.max(padT + (1 - (kg - yMin) / (yMax - yMin)) * plotH, padT), plotBottom);
 
   const startY = y(startKg);
-  const pts = reads.map((p) => ({ x: x(p.day), y: y(p.weightKg) }));
+  const pts = trend.map((p) => ({ x: x(p.day), y: y(p.weightKg) }));
   const linePoints = pts.map((p) => `${p.x},${p.y}`).join(' ');
   const areaPoints = pts.length
     ? [

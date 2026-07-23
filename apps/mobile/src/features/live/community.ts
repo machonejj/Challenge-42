@@ -20,6 +20,7 @@ export interface LeaderRow {
   state: string | null;
   avatarUrl: string | null;
   pctLost: number; // % of body weight lost (negative = gained)
+  lbsLost: number; // exact pounds lost (negative = gained)
   activeRecent: boolean;
   isCurrentUser: boolean;
 }
@@ -41,6 +42,7 @@ interface RpcRow {
   state: string | null;
   avatar_url: string | null;
   pct_lost: number;
+  lbs_lost: number;
   active_recent: boolean;
 }
 
@@ -129,6 +131,10 @@ function pctLost(startKg: number, latestKg: number): number {
   return Math.round(((startKg - latestKg) / startKg) * 1000) / 10;
 }
 
+function lbsLost(startKg: number, latestKg: number): number {
+  return Math.round((startKg - latestKg) * 2.2046226 * 10) / 10;
+}
+
 /** Tiny deterministic offset so multiple challengers in one state don't stack on the exact centroid. */
 function jitter(seed: string): { dx: number; dy: number } {
   let h = 0;
@@ -184,6 +190,7 @@ export function useCommunity(): Community {
           state: normalizeState(profile.state),
           avatarUrl: profile.avatarUrl ?? null,
           pctLost: pctLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
+          lbsLost: lbsLost(profile.startWeightKg, profile.latestWeightKg ?? profile.startWeightKg),
           activeRecent: true,
           isCurrentUser: true,
         }
@@ -199,6 +206,7 @@ export function useCommunity(): Community {
       state: normalizeState(r.state),
       avatarUrl: r.avatar_url ?? null,
       pctLost: r.pct_lost,
+      lbsLost: r.lbs_lost ?? 0,
       activeRecent: r.active_recent,
       isCurrentUser: userId != null && r.user_id === userId,
     }));

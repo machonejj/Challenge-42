@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Pressable,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { Divider } from '@/components/ui/Divider';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
+import { searchOpenFoodFacts } from '@/features/nutrition/openFoodFacts';
 import { formatThousands } from '@/lib/format';
 
 const SLOTS: { value: MealSlot; label: string }[] = [
@@ -48,8 +50,46 @@ export default function LogFood(): React.JSX.Element {
   const [quickProtein, setQuickProtein] = useState('');
   const [addedCount, setAddedCount] = useState(0);
   const [addedCal, setAddedCal] = useState(0);
+  const [remote, setRemote] = useState<FoodItem[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const results = useMemo(() => searchFoods(query, 15), [query]);
+  // Instant curated matches for common foods.
+  const local = useMemo(() => searchFoods(query, 6), [query]);
+
+  // Debounced search of the full Open Food Facts database (branded + specialty items).
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setRemote([]);
+      setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSearching(true);
+    const t = setTimeout(() => {
+      void searchOpenFoodFacts(q, 20, controller.signal).then((items) => {
+        setRemote(items);
+        setSearching(false);
+      });
+    }, 350);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [query]);
+
+  // Merge curated + remote, de-duping by id and by name so we don't show the same food twice.
+  const results = useMemo(() => {
+    const seen = new Set<string>();
+    const out: FoodItem[] = [];
+    for (const f of [...local, ...remote]) {
+      const key = `${f.name.toLowerCase()}|${f.brand ?? ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(f);
+    }
+    return out;
+  }, [local, remote]);
 
   const tapAdd = (label: string, calories: number, proteinG: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -80,14 +120,24 @@ export default function LogFood(): React.JSX.Element {
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <Text variant="titleMd">Log food</Text>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          style={styles.close}
-          accessibilityLabel="Close"
-        >
-          <Ionicons name="close" size={20} color={colors.text.secondary} />
-        </Pressable>
+        <View style={styles.headerBtns}>
+          <Pressable
+            onPress={() => router.push('/calendar')}
+            hitSlop={8}
+            style={styles.close}
+            accessibilityLabel="Open history calendar"
+          >
+            <Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={styles.close}
+            accessibilityLabel="Close"
+          >
+            <Ionicons name="close" size={20} color={colors.text.secondary} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.slotRow}>
@@ -118,15 +168,24 @@ export default function LogFood(): React.JSX.Element {
         <TextField
           value={query}
           onChangeText={setQuery}
-          placeholder="Search (e.g. chicken, banana)"
+          placeholder="Search anything — Big Mac, Cheetos, banana…"
           autoCapitalize="none"
         />
         {query.trim().length > 0 ? (
           <View style={styles.results}>
             {results.length === 0 ? (
-              <Text variant="bodyMd" color="tertiary" style={{ paddingVertical: spacing.md }}>
-                No matches. Use Quick add below for anything.
-              </Text>
+              searching ? (
+                <View style={styles.searching}>
+                  <ActivityIndicator color={colors.brand.pine} />
+                  <Text variant="bodyMd" color="tertiary">
+                    Searching foods…
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="bodyMd" color="tertiary" style={{ paddingVertical: spacing.md }}>
+                  No matches. Use Quick add below for anything.
+                </Text>
+              )
             ) : (
               results.map((food, i) => (
                 <View key={food.providerFoodId}>
@@ -140,7 +199,8 @@ export default function LogFood(): React.JSX.Element {
                       <Text variant="bodyLg" numberOfLines={1}>
                         {food.name}
                       </Text>
-                      <Text variant="labelSm" color="tertiary">
+                      <Text variant="labelSm" color="tertiary" numberOfLines={1}>
+                        {food.brand ? `${food.brand} · ` : ''}
                         {food.servingLabel} · {food.nutrition.calories} cal ·{' '}
                         {food.nutrition.proteinG}g protein
                       </Text>
@@ -205,6 +265,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenGutter,
     paddingBottom: spacing.md,
   },
+  headerBtns: { flexDirection: 'row', gap: spacing.sm },
   close: {
     width: 36,
     height: 36,
@@ -230,6 +291,12 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: layout.screenGutter },
   sectionLabel: { marginTop: spacing.lg, marginBottom: spacing.sm },
   results: { marginTop: spacing.sm },
+  searching: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+  },
   foodRow: {
     flexDirection: 'row',
     alignItems: 'center',

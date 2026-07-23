@@ -16,6 +16,12 @@ function pctText(pct: number): string {
   return '0%';
 }
 
+function lbsText(lbs: number): string {
+  if (lbs > 0) return `${lbs.toFixed(1)} lb`;
+  if (lbs < 0) return `+${Math.abs(lbs).toFixed(1)} lb`; // gained
+  return '0 lb';
+}
+
 /** One podium column (bigger + raised for 1st). */
 function Podium({ entry }: { entry: LeaderRow }): React.JSX.Element {
   const first = entry.rank === 1;
@@ -44,10 +50,10 @@ function Podium({ entry }: { entry: LeaderRow }): React.JSX.Element {
         {entry.isCurrentUser ? 'You' : entry.name}
       </Text>
       <Text variant="titleMd" style={{ color: colors.status.positive }}>
-        {pctText(entry.pctLost)}
+        {lbsText(entry.lbsLost)}
       </Text>
       <Text variant="labelSm" color="tertiary" numberOfLines={1}>
-        {entry.state ?? ' '}
+        {pctText(entry.pctLost)}
       </Text>
     </View>
   );
@@ -89,10 +95,10 @@ function Row({ entry }: { entry: LeaderRow }): React.JSX.Element {
           variant="titleMd"
           style={{ color: lost ? colors.status.positive : colors.text.tertiary }}
         >
-          {pctText(entry.pctLost)}
+          {lbsText(entry.lbsLost)}
         </Text>
         <Text variant="labelSm" color="tertiary">
-          lost
+          {pctText(entry.pctLost)}
         </Text>
       </View>
     </View>
@@ -191,5 +197,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.gold,
   },
   youText: { color: '#1C1A15', fontWeight: '700', fontSize: 9, letterSpacing: 0.5 },
-  right: { alignItems: 'flex-end', minWidth: 52 },
+  right: { alignItems: 'flex-end', minWidth: 66 },
 });
