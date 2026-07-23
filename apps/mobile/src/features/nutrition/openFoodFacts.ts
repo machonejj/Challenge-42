@@ -37,7 +37,11 @@ function toFoodItem(p: OFFProduct): FoodItem | null {
   const calServing = num(nut['energy-kcal_serving']);
   const perServing = calServing != null;
   const cal = perServing ? calServing : num(nut['energy-kcal_100g']);
-  if (cal == null) return null; // no calorie data → not useful to log
+  if (cal == null || cal <= 0) return null; // no calorie data → not useful to log
+  // Reject implausible crowd-sourced values (e.g. a per-100g field holding 48000). No real food
+  // exceeds ~900 kcal/100g; a single logged serving over ~3000 kcal is almost certainly bad data.
+  if (!perServing && cal > 900) return null;
+  if (perServing && cal > 3000) return null;
 
   const pick = (base: string): number =>
     num(perServing ? nut[`${base}_serving`] : nut[`${base}_100g`]) ?? 0;

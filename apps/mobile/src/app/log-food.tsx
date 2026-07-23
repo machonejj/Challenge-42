@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { Divider } from '@/components/ui/Divider';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
-import { searchOpenFoodFacts } from '@/features/nutrition/openFoodFacts';
+import { searchRemoteFoods } from '@/features/nutrition/foodSearch';
 import { formatThousands } from '@/lib/format';
 
 const SLOTS: { value: MealSlot; label: string }[] = [
@@ -67,7 +67,7 @@ export default function LogFood(): React.JSX.Element {
     const controller = new AbortController();
     setSearching(true);
     const t = setTimeout(() => {
-      void searchOpenFoodFacts(q, 20, controller.signal).then((items) => {
+      void searchRemoteFoods(q, controller.signal).then((items) => {
         setRemote(items);
         setSearching(false);
       });
