@@ -6,19 +6,22 @@
  */
 import type { FoodItem } from '@challenge42/domain';
 import { searchNutritionix } from './nutritionix';
+import { searchEdamam } from './edamam';
 import { searchOpenFoodFacts } from './openFoodFacts';
 import { searchUsda } from './usda';
 
 export async function searchRemoteFoods(query: string, signal?: AbortSignal): Promise<FoodItem[]> {
-  // Nutritionix first (curated restaurant + branded), then USDA, then Open Food Facts.
-  const [nix, usda, off] = await Promise.all([
+  // Query every configured provider in parallel; curated ones (Nutritionix / Edamam / USDA — the
+  // ones with full macros) rank ahead of Open Food Facts, then we de-dupe.
+  const [nix, eda, usda, off] = await Promise.all([
     searchNutritionix(query, 15, signal),
+    searchEdamam(query, 15, signal),
     searchUsda(query, 12, signal),
     searchOpenFoodFacts(query, 20, signal),
   ]);
   const seen = new Set<string>();
   const out: FoodItem[] = [];
-  for (const f of [...nix, ...usda, ...off]) {
+  for (const f of [...nix, ...eda, ...usda, ...off]) {
     const key = `${f.name.toLowerCase()}|${(f.brand ?? '').toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
