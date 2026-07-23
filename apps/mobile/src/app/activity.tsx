@@ -21,19 +21,11 @@ import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useActivityStore, countToday } from '@/features/activity/activityStore';
-import { POINTS } from '@/features/points/points';
+import { QUICK_ADDS } from '@/features/activity/quickAdds';
+import { activityPoints } from '@/features/points/pointsConfig';
 
 type Mode = 'choose' | 'start' | 'timer' | 'log';
 const DURATIONS = [10, 15, 20, 30, 45];
-
-const QUICK_ADDS: { label: string; type: ActivityTypeKey; durationMin: number; emoji: string }[] = [
-  { label: '1 mile walk', type: 'walk', durationMin: 18, emoji: '🚶' },
-  { label: '1 mile run', type: 'run', durationMin: 10, emoji: '🏃' },
-  { label: '25 push-ups', type: 'strength', durationMin: 3, emoji: '💪' },
-  { label: '10 burpees', type: 'hiit', durationMin: 2, emoji: '🔥' },
-  { label: '50 squats', type: 'strength', durationMin: 3, emoji: '🦵' },
-  { label: '1 min plank', type: 'strength', durationMin: 1, emoji: '🧘' },
-];
 
 function typeLabel(key: ActivityTypeKey): string {
   return ACTIVITY_TYPES.find((t) => t.key === key)?.label ?? key;
@@ -144,7 +136,7 @@ export default function ActivityScreen(): React.JSX.Element {
   const [durationMin, setDurationMin] = useState<number>(15);
   const [logMinutes, setLogMinutes] = useState('30');
   const [logWhen, setLogWhen] = useState<'today' | 'yesterday'>('today');
-  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [justAdded, setJustAdded] = useState<(typeof QUICK_ADDS)[number] | null>(null);
 
   const todayCount = countToday(sessions, Date.now());
 
@@ -157,7 +149,7 @@ export default function ActivityScreen(): React.JSX.Element {
       completedAtMs: Date.now(),
       source: 'logged',
     });
-    setJustAdded(q.label);
+    setJustAdded(q);
   };
 
   const saveLogged = () => {
@@ -257,7 +249,7 @@ export default function ActivityScreen(): React.JSX.Element {
                       {q.label}
                     </Text>
                     <Text variant="labelSm" color="tertiary">
-                      +{POINTS.activity} pts
+                      +{activityPoints(q.durationMin)} pts
                     </Text>
                   </View>
                   <Ionicons name="add" size={18} color={colors.brand.pine} />
@@ -270,7 +262,7 @@ export default function ActivityScreen(): React.JSX.Element {
                 align="center"
                 style={{ color: colors.status.positive, marginTop: spacing.md }}
               >
-                Added {justAdded} · +{POINTS.activity} pts 🎉
+                Added {justAdded.label} · +{activityPoints(justAdded.durationMin)} pts 🎉
               </Text>
             ) : (
               <Text variant="labelMd" color="tertiary" style={styles.todayLine}>

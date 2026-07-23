@@ -8,6 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { brand, colors, spacing } from '@challenge42/config';
 import { queryClient } from '@/lib/queryClient';
 import { Text } from '@/components/ui/Text';
+import { PointsBurst } from '@/components/fx/PointsBurst';
 import { isSupabaseConfigured } from '@/services/supabase/client';
 import { startCloudSync, stopCloudSync } from '@/services/sync/cloudSync';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -134,6 +135,7 @@ function RootNavigator(): React.JSX.Element {
         <Stack.Screen name="admin" options={{ presentation: 'modal' }} />
       </Stack>
       {!ready ? <SplashOverlay /> : null}
+      <PointsBurst />
     </View>
   );
 }

@@ -13,7 +13,7 @@ import { Section } from '@/components/ui/Section';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ChallengeHeader } from '@/components/home/ChallengeHeader';
 import { MetricCard } from '@/components/home/MetricCard';
-import { QuickAction } from '@/components/home/QuickAction';
+import { LogToday } from '@/components/home/LogToday';
 import { WeighInStatus } from '@/components/home/WeighInStatus';
 import { GoalsProgress } from '@/components/home/GoalsProgress';
 import { PointsCard } from '@/components/home/PointsCard';
@@ -250,16 +250,14 @@ function TodayBlock({
         </View>
       </Card>
 
-      <View style={styles.quickRow}>
-        <QuickAction
-          icon="restaurant-outline"
-          label="Food"
-          tone="primary"
-          onPress={() => onQuick('/log-food')}
+      <View style={styles.logToday}>
+        <LogToday
+          consumed={today.calories.consumed}
+          calorieTarget={today.calories.target}
+          unit={today.weight.unit}
+          onSearchFoods={() => onQuick('/log-food')}
+          onFullActivity={() => onQuick('/activity')}
         />
-        <QuickAction icon="scale-outline" label="Weigh In" onPress={() => onQuick('/weigh-in')} />
-        <QuickAction icon="footsteps-outline" label="Steps" onPress={() => onQuick('/log-steps')} />
-        <QuickAction icon="play-outline" label="Activity" onPress={() => onQuick('/activity')} />
       </View>
     </Section>
   );
@@ -277,7 +275,7 @@ const styles = StyleSheet.create({
   todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   metrics: { flex: 1, gap: spacing.md },
   metricDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.hairline },
-  quickRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  logToday: { marginTop: spacing.lg },
   safeBanner: {
     flexDirection: 'row',
     alignItems: 'center',

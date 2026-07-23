@@ -9,13 +9,9 @@ import { useFoodLogStore } from '@/features/tracking/foodLogStore';
 import { useWeightStore } from '@/features/tracking/weightStore';
 import { useActivityStore } from '@/features/activity/activityStore';
 import { useStepsStore, totalSteps } from '@/features/tracking/stepsStore';
+import { POINTS, activityPoints } from './pointsConfig';
 
-export const POINTS = {
-  food: 5, // per food logged
-  weighIn: 10, // per weigh-in
-  activity: 15, // per activity logged
-  per1000Steps: 5, // per 1,000 steps
-} as const;
+export { POINTS, activityPoints };
 
 const PER_LEVEL = 200;
 
@@ -51,10 +47,11 @@ export function usePoints(): PointsSummary {
     const stepTotal = totalSteps(steps);
     const stepToday = steps.filter((e) => e.atMs >= dayStart).reduce((sum, e) => sum + e.steps, 0);
 
+    const activityTotal = activities.reduce((sum, a) => sum + activityPoints(a.durationMin), 0);
     const parts: PointsPart[] = [
       { label: 'Food', icon: 'restaurant-outline', points: food.length * POINTS.food },
       { label: 'Weigh-ins', icon: 'scale-outline', points: weight.length * POINTS.weighIn },
-      { label: 'Activity', icon: 'barbell-outline', points: activities.length * POINTS.activity },
+      { label: 'Activity', icon: 'barbell-outline', points: activityTotal },
       {
         label: 'Steps',
         icon: 'footsteps-outline',
@@ -66,7 +63,9 @@ export function usePoints(): PointsSummary {
     const today =
       food.filter((e) => e.atMs >= dayStart).length * POINTS.food +
       weight.filter((e) => e.measuredAtMs >= dayStart).length * POINTS.weighIn +
-      activities.filter((a) => a.completedAtMs >= dayStart).length * POINTS.activity +
+      activities
+        .filter((a) => a.completedAtMs >= dayStart)
+        .reduce((sum, a) => sum + activityPoints(a.durationMin), 0) +
       Math.floor(stepToday / 1000) * POINTS.per1000Steps;
 
     const level = Math.floor(total / PER_LEVEL) + 1;

@@ -1,36 +1,30 @@
 import { useEffect, useState } from 'react';
-import { View, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, layout } from '@challenge42/config';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
-import { TextField } from '@/components/ui/TextField';
 import { useStepsStore, todaySteps } from '@/features/tracking/stepsStore';
 import { isStepSyncAvailable, requestStepPermission } from '@/features/health/healthSteps';
 import { syncStepsFromDevice } from '@/features/health/syncSteps';
 import { formatThousands } from '@/lib/format';
 
-const QUICK = [1000, 2500, 5000];
-
 export default function LogSteps(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const addSteps = useStepsStore((s) => s.addSteps);
   const today = useStepsStore((s) => todaySteps(s.entries, Date.now()));
   const syncEnabled = useStepsStore((s) => s.syncEnabled);
   const setSyncEnabled = useStepsStore((s) => s.setSyncEnabled);
-  const [value, setValue] = useState('');
   const [available, setAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void isStepSyncAvailable().then(setAvailable);
-    void syncStepsFromDevice(); // refresh today's count if already connected
+    void syncStepsFromDevice();
   }, []);
 
   const connect = async (): Promise<void> => {
@@ -50,27 +44,11 @@ export default function LogSteps(): React.JSX.Element {
     setBusy(false);
   };
 
-  const add = (n: number): void => {
-    if (n <= 0) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    addSteps(n);
-  };
-
-  const addTyped = (): void => {
-    const n = parseInt(value.replace(/[^0-9]/g, ''), 10);
-    if (Number.isNaN(n) || n <= 0) return;
-    add(n);
-    setValue('');
-  };
-
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.root}>
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Text variant="titleMd">Log steps</Text>
+        <Text variant="titleMd">Steps</Text>
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
@@ -102,23 +80,23 @@ export default function LogSteps(): React.JSX.Element {
               <Text variant="labelMd">Auto-sync from your phone</Text>
               <Text variant="labelSm" color="tertiary">
                 {syncEnabled
-                  ? 'On — your step count updates automatically.'
-                  : 'Pull steps straight from your phone’s step counter.'}
+                  ? 'On — your steps update automatically.'
+                  : 'Connect once and steps read from your phone.'}
               </Text>
             </View>
             <Button
               label={syncEnabled ? 'On' : 'Connect'}
               variant={syncEnabled ? 'ghost' : 'secondary'}
               loading={busy}
-              onPress={connect}
+              onPress={() => void connect()}
             />
           </View>
         ) : (
           <View style={styles.syncNote}>
             <Ionicons name="phone-portrait-outline" size={18} color={colors.text.tertiary} />
             <Text variant="labelSm" color="secondary" style={{ flex: 1 }}>
-              Automatic step sync works in the installed iPhone/Android app. On the web, add steps
-              manually below.
+              Steps read automatically from your phone in the installed iPhone/Android app — no
+              manual entry. On the web there’s nothing to sync.
             </Text>
           </View>
         )}
@@ -128,38 +106,9 @@ export default function LogSteps(): React.JSX.Element {
           </Text>
         ) : null}
 
-        <Text variant="labelSm" color="tertiary" style={styles.orLabel}>
-          ADD MANUALLY
-        </Text>
-
-        <View style={styles.quickRow}>
-          {QUICK.map((n) => (
-            <Pressable key={n} style={styles.quick} onPress={() => add(n)}>
-              <Text variant="labelMd" style={{ color: colors.brand.pine }}>
-                +{formatThousands(n)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text variant="labelSm" color="tertiary" style={styles.sectionLabel}>
-          OR ENTER A NUMBER
-        </Text>
-        <TextField
-          value={value}
-          onChangeText={setValue}
-          placeholder="e.g. 7500"
-          keyboardType="number-pad"
-        />
-        <Button
-          label="Add steps"
-          variant="secondary"
-          onPress={addTyped}
-          style={{ marginTop: spacing.md }}
-        />
-        <Button label="Done" onPress={() => router.back()} style={{ marginTop: spacing.lg }} />
+        <Button label="Done" onPress={() => router.back()} style={{ marginTop: spacing.xl }} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -200,14 +149,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  orLabel: { marginTop: spacing.xl, marginBottom: spacing.sm },
-  quickRow: { flexDirection: 'row', gap: spacing.md },
-  quick: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface.sunken,
-  },
-  sectionLabel: { marginTop: spacing.xl, marginBottom: spacing.sm },
 });

@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { latestTrendKg } from '@challenge42/domain';
 import { newId } from '@/lib/id';
 import { useProfileStore } from '@/features/profile/profileStore';
+import { celebratePoints } from '@/features/points/pointsFx';
+import { POINTS } from '@/features/points/pointsConfig';
 
 export interface WeightEntryLite {
   id: string;
@@ -55,9 +57,13 @@ export const useWeightStore = create<WeightState>()(
           note: note ?? null,
         };
         // One weigh-in per day: today's new reading replaces any earlier one from today.
+        const hadToday = get().entries.some(
+          (e) => dayKey(e.measuredAtMs) === dayKey(entry.measuredAtMs),
+        );
         const entries = onerPerDay([...get().entries, entry]);
         set({ entries });
         syncTrendToProfile(entries);
+        if (!hadToday) celebratePoints(POINTS.weighIn, 'Weigh-in'); // only the first weigh-in/day scores
       },
 
       removeEntry: (id) => {

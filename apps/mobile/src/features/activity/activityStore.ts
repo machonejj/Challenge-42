@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ActivityTypeKey } from '@challenge42/types';
 import { newId } from '@/lib/id';
+import { celebratePoints } from '@/features/points/pointsFx';
+import { activityPoints } from '@/features/points/pointsConfig';
 
 export interface ActivitySessionLite {
   id: string;
@@ -26,7 +28,10 @@ export const useActivityStore = create<ActivityState>()(
     (set, get) => ({
       sessions: [],
       hydrated: false,
-      addSession: (input) => set({ sessions: [...get().sessions, { id: newId(), ...input }] }),
+      addSession: (input) => {
+        set({ sessions: [...get().sessions, { id: newId(), ...input }] });
+        celebratePoints(activityPoints(input.durationMin), input.title ?? 'Activity');
+      },
       reset: () => set({ sessions: [] }),
       _setHydrated: () => set({ hydrated: true }),
     }),

@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MealSlot } from '@challenge42/types';
 import { newId } from '@/lib/id';
+import { celebratePoints } from '@/features/points/pointsFx';
+import { POINTS } from '@/features/points/pointsConfig';
 
 export interface FoodEntry {
   id: string;
@@ -28,8 +30,10 @@ export const useFoodLogStore = create<FoodLogState>()(
     (set, get) => ({
       entries: [],
       hydrated: false,
-      addEntry: (input) =>
-        set({ entries: [...get().entries, { id: newId(), atMs: Date.now(), ...input }] }),
+      addEntry: (input) => {
+        set({ entries: [...get().entries, { id: newId(), atMs: Date.now(), ...input }] });
+        celebratePoints(POINTS.food, input.label);
+      },
       updateEntry: (id, patch) =>
         set({ entries: get().entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }),
       removeEntry: (id) => set({ entries: get().entries.filter((e) => e.id !== id) }),
