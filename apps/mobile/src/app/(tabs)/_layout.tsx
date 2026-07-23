@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@challenge42/config';
@@ -44,7 +44,16 @@ export default function TabsLayout(): React.JSX.Element {
       <Tabs.Screen name="track" options={{ title: 'Track', tabBarIcon: tabIcon('stats-chart') }} />
       <Tabs.Screen
         name="community"
-        options={{ title: 'Community', tabBarIcon: tabIcon('restaurant') }}
+        options={{
+          title: 'Community',
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'handshake' : 'handshake-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tabs.Screen name="live" options={{ title: 'Leaderboard', tabBarIcon: tabIcon('trophy') }} />
       <Tabs.Screen name="plan" options={{ href: null }} />

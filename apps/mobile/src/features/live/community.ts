@@ -12,6 +12,7 @@ import { useProfileStore } from '@/features/profile/profileStore';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
 import { useStepsStore, totalSteps } from '@/features/tracking/stepsStore';
 import { STATE_XY } from './usMapData';
+import { DEMO_PEOPLE, DEMO_TOTALS } from './demoPeople';
 
 export interface LeaderRow {
   userId: string;
@@ -196,10 +197,10 @@ export function useCommunity(): Community {
         }
       : null;
 
-  let rows: LeaderRow[];
   const hasRemote = Boolean(remote && remote.length > 0);
+  let baseRows: LeaderRow[];
   if (remote && remote.length > 0) {
-    rows = remote.map((r) => ({
+    baseRows = remote.map((r) => ({
       userId: r.user_id,
       rank: 0,
       name: r.display_name,
@@ -211,12 +212,26 @@ export function useCommunity(): Community {
       isCurrentUser: userId != null && r.user_id === userId,
     }));
     // Guarantee the signed-in user is represented even if their sync hasn't landed server-side yet.
-    if (me && !rows.some((r) => r.isCurrentUser)) rows.push(me);
-    rows.sort((a, b) => b.pctLost - a.pctLost);
-    rows = rows.map((r, i) => ({ ...r, rank: i + 1 }));
+    if (me && !baseRows.some((r) => r.isCurrentUser)) baseRows.push(me);
   } else {
-    rows = me ? [me] : [];
+    baseRows = me ? [me] : [];
   }
+
+  // Demo challengers (client-side seed) so the board looks alive during the pilot.
+  const demoRows: LeaderRow[] = DEMO_PEOPLE.map((d) => ({
+    userId: d.id,
+    rank: 0,
+    name: d.name,
+    state: d.state,
+    avatarUrl: d.avatarUrl,
+    pctLost: d.pctLost,
+    lbsLost: d.lbsLost,
+    activeRecent: d.activeRecent,
+    isCurrentUser: false,
+  }));
+
+  let rows = [...baseRows, ...demoRows].sort((a, b) => b.pctLost - a.pctLost);
+  rows = rows.map((r, i) => ({ ...r, rank: i + 1 }));
 
   const dots: PresenceDot[] = rows
     .filter((r) => r.state && STATE_XY[r.state])
@@ -290,10 +305,10 @@ export function useCommunityStats(): CommunityStats {
 
   if (remote) {
     return {
-      lbsLost: Number(remote.lbs_lost) || 0,
-      meals: Number(remote.meals) || 0,
-      steps: Number(remote.steps) || 0,
-      members: Number(remote.members) || 0,
+      lbsLost: Math.round((Number(remote.lbs_lost) + DEMO_TOTALS.lbsLost) * 10) / 10,
+      meals: (Number(remote.meals) || 0) + DEMO_TOTALS.meals,
+      steps: (Number(remote.steps) || 0) + DEMO_TOTALS.steps,
+      members: (Number(remote.members) || 0) + DEMO_TOTALS.members,
       isReal: true,
     };
   }
@@ -306,10 +321,10 @@ export function useCommunityStats(): CommunityStats {
         )
       : 0;
   return {
-    lbsLost: Math.round(myLbs * 10) / 10,
-    meals: foodCount,
-    steps: mySteps,
-    members: profile.enrolled ? 1 : 0,
+    lbsLost: Math.round((myLbs + DEMO_TOTALS.lbsLost) * 10) / 10,
+    meals: foodCount + DEMO_TOTALS.meals,
+    steps: mySteps + DEMO_TOTALS.steps,
+    members: (profile.enrolled ? 1 : 0) + DEMO_TOTALS.members,
     isReal: false,
   };
 }
