@@ -5,17 +5,20 @@
  * the local curated list at minimum.
  */
 import type { FoodItem } from '@challenge42/domain';
+import { searchNutritionix } from './nutritionix';
 import { searchOpenFoodFacts } from './openFoodFacts';
 import { searchUsda } from './usda';
 
 export async function searchRemoteFoods(query: string, signal?: AbortSignal): Promise<FoodItem[]> {
-  const [usda, off] = await Promise.all([
+  // Nutritionix first (curated restaurant + branded), then USDA, then Open Food Facts.
+  const [nix, usda, off] = await Promise.all([
+    searchNutritionix(query, 15, signal),
     searchUsda(query, 12, signal),
     searchOpenFoodFacts(query, 20, signal),
   ]);
   const seen = new Set<string>();
   const out: FoodItem[] = [];
-  for (const f of [...usda, ...off]) {
+  for (const f of [...nix, ...usda, ...off]) {
     const key = `${f.name.toLowerCase()}|${(f.brand ?? '').toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
