@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from '@/services/supabase/client';
 import { startCloudSync, stopCloudSync } from '@/services/sync/cloudSync';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useAccessStore } from '@/features/admin/accessStore';
+import { syncStepsFromDevice } from '@/features/health/syncSteps';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { useProfileStore } from '@/features/profile/profileStore';
 import { getAnalytics } from '@/services/analytics/AnalyticsService';
@@ -71,6 +72,11 @@ function RootNavigator(): React.JSX.Element {
     } else if (authStatus === 'signedOut') {
       useAccessStore.getState().clear();
     }
+  }, [authStatus, userId]);
+
+  // Pull today's steps from the phone's step counter (no-op on web / when the user hasn't opted in).
+  useEffect(() => {
+    if (authStatus === 'signedIn') void syncStepsFromDevice();
   }, [authStatus, userId]);
 
   const ready = authStatus !== 'restoring' && onbHydrated && profileHydrated;

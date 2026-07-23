@@ -9,7 +9,10 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "Challenge42 reads your step count to track your daily movement for the challenge."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,6 +21,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": ["android.permission.ACTIVITY_RECOGNITION"],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -32,6 +36,12 @@
           "backgroundColor": "#12382B",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 96
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Challenge42 reads your step count to track your daily movement for the challenge."
         }
       ]
     ],

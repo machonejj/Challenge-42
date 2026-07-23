@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,8 @@ import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useStepsStore, todaySteps } from '@/features/tracking/stepsStore';
+import { isStepSyncAvailable, requestStepPermission } from '@/features/health/healthSteps';
+import { syncStepsFromDevice } from '@/features/health/syncSteps';
 import { formatThousands } from '@/lib/format';
 
 const QUICK = [1000, 2500, 5000];
@@ -19,7 +21,34 @@ export default function LogSteps(): React.JSX.Element {
   const router = useRouter();
   const addSteps = useStepsStore((s) => s.addSteps);
   const today = useStepsStore((s) => todaySteps(s.entries, Date.now()));
+  const syncEnabled = useStepsStore((s) => s.syncEnabled);
+  const setSyncEnabled = useStepsStore((s) => s.setSyncEnabled);
   const [value, setValue] = useState('');
+  const [available, setAvailable] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void isStepSyncAvailable().then(setAvailable);
+    void syncStepsFromDevice(); // refresh today's count if already connected
+  }, []);
+
+  const connect = async (): Promise<void> => {
+    if (syncEnabled) {
+      setSyncEnabled(false);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const granted = await requestStepPermission();
+    if (granted) {
+      setSyncEnabled(true);
+      await syncStepsFromDevice();
+    } else {
+      setError('Motion access was denied. You can turn it on in your phone’s Settings.');
+    }
+    setBusy(false);
+  };
 
   const add = (n: number): void => {
     if (n <= 0) return;
@@ -61,6 +90,47 @@ export default function LogSteps(): React.JSX.Element {
             steps today
           </Text>
         </View>
+
+        {available ? (
+          <View style={styles.syncCard}>
+            <Ionicons
+              name={syncEnabled ? 'sync-circle' : 'sync-circle-outline'}
+              size={26}
+              color={syncEnabled ? colors.status.positive : colors.brand.pine}
+            />
+            <View style={{ flex: 1 }}>
+              <Text variant="labelMd">Auto-sync from your phone</Text>
+              <Text variant="labelSm" color="tertiary">
+                {syncEnabled
+                  ? 'On — your step count updates automatically.'
+                  : 'Pull steps straight from your phone’s step counter.'}
+              </Text>
+            </View>
+            <Button
+              label={syncEnabled ? 'On' : 'Connect'}
+              variant={syncEnabled ? 'ghost' : 'secondary'}
+              loading={busy}
+              onPress={connect}
+            />
+          </View>
+        ) : (
+          <View style={styles.syncNote}>
+            <Ionicons name="phone-portrait-outline" size={18} color={colors.text.tertiary} />
+            <Text variant="labelSm" color="secondary" style={{ flex: 1 }}>
+              Automatic step sync works in the installed iPhone/Android app. On the web, add steps
+              manually below.
+            </Text>
+          </View>
+        )}
+        {error ? (
+          <Text variant="labelSm" style={{ color: colors.status.danger, marginTop: spacing.sm }}>
+            {error}
+          </Text>
+        ) : null}
+
+        <Text variant="labelSm" color="tertiary" style={styles.orLabel}>
+          ADD MANUALLY
+        </Text>
 
         <View style={styles.quickRow}>
           {QUICK.map((n) => (
@@ -111,7 +181,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { paddingHorizontal: layout.screenGutter },
-  hero: { alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.xl },
+  hero: { alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.lg },
+  syncCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.hairline,
+    padding: spacing.md,
+  },
+  syncNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface.sunken,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  orLabel: { marginTop: spacing.xl, marginBottom: spacing.sm },
   quickRow: { flexDirection: 'row', gap: spacing.md },
   quick: {
     flex: 1,
