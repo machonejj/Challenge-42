@@ -13,6 +13,7 @@ import { useWeightStore } from '@/features/tracking/weightStore';
 import { useFoodLogStore } from '@/features/tracking/foodLogStore';
 import { useStepsStore } from '@/features/tracking/stepsStore';
 import { useActivityStore } from '@/features/activity/activityStore';
+import { useGoalsStore } from '@/features/goals/goalsStore';
 
 interface AppStateBlob {
   v: number;
@@ -22,6 +23,7 @@ interface AppStateBlob {
   food?: Record<string, unknown>;
   steps?: Record<string, unknown>;
   activity?: Record<string, unknown>;
+  goals?: Record<string, unknown>;
 }
 
 function collectState(): AppStateBlob {
@@ -31,6 +33,7 @@ function collectState(): AppStateBlob {
   const f = useFoodLogStore.getState();
   const st = useStepsStore.getState();
   const a = useActivityStore.getState();
+  const g = useGoalsStore.getState();
   return {
     v: 1,
     profile: {
@@ -56,6 +59,11 @@ function collectState(): AppStateBlob {
     food: { entries: f.entries },
     steps: { entries: st.entries },
     activity: { sessions: a.sessions },
+    goals: {
+      stepsGoal: g.stepsGoal,
+      activityMinutesGoal: g.activityMinutesGoal,
+      calorieGoal: g.calorieGoal,
+    },
   };
 }
 
@@ -66,6 +74,7 @@ function hydrate(blob: AppStateBlob): void {
   if (blob.food) useFoodLogStore.setState(blob.food as never);
   if (blob.steps) useStepsStore.setState(blob.steps as never);
   if (blob.activity) useActivityStore.setState(blob.activity as never);
+  if (blob.goals) useGoalsStore.setState(blob.goals as never);
 }
 
 function isMeaningful(blob: AppStateBlob | null): boolean {
@@ -127,6 +136,7 @@ export async function startCloudSync(userId: string): Promise<void> {
     useFoodLogStore,
     useStepsStore,
     useActivityStore,
+    useGoalsStore,
   ];
   unsubscribers = stores.map((s) => s.subscribe(() => schedulePush(userId)));
 }
