@@ -74,12 +74,14 @@ export function WeightJourneyChart({
 
   const startY = y(startKg);
   const pts = reads.map((p) => ({ x: x(p.day), y: y(p.weightKg), kg: p.weightKg }));
-  const linePoints = pts.map((p) => `${p.x},${p.y}`).join(' ');
-  const areaPoints = pts.length
+  // Begin the line at the starting weight (left edge), so it connects "Start" → day 1.
+  const linePts = pts.length ? [{ x: padL, y: startY }, ...pts] : [];
+  const linePoints = linePts.map((p) => `${p.x},${p.y}`).join(' ');
+  const areaPoints = linePts.length
     ? [
-        `${pts[0]!.x},${plotBottom}`,
-        ...pts.map((p) => `${p.x},${p.y}`),
-        `${pts[pts.length - 1]!.x},${plotBottom}`,
+        `${linePts[0]!.x},${plotBottom}`,
+        ...linePts.map((p) => `${p.x},${p.y}`),
+        `${linePts[linePts.length - 1]!.x},${plotBottom}`,
       ].join(' ')
     : '';
 
@@ -116,8 +118,8 @@ export function WeightJourneyChart({
               />
             ) : null}
 
-            {/* Trend area + line */}
-            {pts.length >= 2 ? (
+            {/* Trend area + line (starts at the starting weight, connecting Start → day 1) */}
+            {linePts.length >= 2 ? (
               <>
                 <Polygon points={areaPoints} fill="rgba(18, 56, 43, 0.06)" />
                 <Polyline
