@@ -67,6 +67,7 @@ export function LogToday({
   const latestDisplay = latest
     ? `${round(kgToDisplay(latest.weightKg, unit), 1)} ${unit}`
     : 'Not logged';
+  const weighedToday = weightEntries.some((e) => isToday(e.measuredAtMs));
 
   const [fName, setFName] = useState('');
   const [fCal, setFCal] = useState('');
@@ -107,14 +108,28 @@ export function LogToday({
     }
   };
 
-  const rows: { key: Exclude<Panel, null>; icon: IconName; label: string; summary: string }[] = [
+  const rows: {
+    key: Exclude<Panel, null>;
+    icon: IconName;
+    label: string;
+    summary: string;
+    badge?: { text: string; tone: 'done' | 'due' };
+  }[] = [
     {
       key: 'food',
       icon: 'restaurant-outline',
       label: 'Food',
       summary: `${formatThousands(consumed)} / ${formatThousands(calorieTarget)} cal`,
     },
-    { key: 'weight', icon: 'scale-outline', label: 'Weigh in', summary: latestDisplay },
+    {
+      key: 'weight',
+      icon: 'scale-outline',
+      label: 'Weigh in',
+      summary: weighedToday ? latestDisplay : latest ? `Last: ${latestDisplay}` : 'Not logged yet',
+      badge: weighedToday
+        ? { text: 'Logged today', tone: 'done' }
+        : { text: 'Due today', tone: 'due' },
+    },
     {
       key: 'steps',
       icon: 'footsteps-outline',
@@ -276,6 +291,21 @@ export function LogToday({
                 {r.summary}
               </Text>
             </View>
+            {r.badge ? (
+              <View
+                style={[styles.badge, r.badge.tone === 'done' ? styles.badgeDone : styles.badgeDue]}
+              >
+                {r.badge.tone === 'done' ? (
+                  <Ionicons name="checkmark-circle" size={13} color={colors.status.positive} />
+                ) : null}
+                <Text
+                  variant="labelSm"
+                  style={{ color: r.badge.tone === 'done' ? colors.status.positive : '#8A6D2B' }}
+                >
+                  {r.badge.text}
+                </Text>
+              </View>
+            ) : null}
             <Ionicons
               name={open === r.key ? 'chevron-down' : 'chevron-forward'}
               size={18}
@@ -305,6 +335,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  badgeDone: { backgroundColor: 'rgba(47, 143, 91, 0.12)' },
+  badgeDue: { backgroundColor: 'rgba(201, 166, 91, 0.16)' },
   panel: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,

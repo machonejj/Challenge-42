@@ -182,8 +182,7 @@ export function WeightJourneyChart({
               const above = i % 2 === 0;
               const ly = Math.min(Math.max(above ? p.y - 9 : p.y + 16, 11), plotBottom + 12);
               // Left/right-anchor near the edges so labels never clip (Start sits at the left edge).
-              const anchor =
-                p.x < padL + 14 ? 'start' : p.x > padL + plotW - 14 ? 'end' : 'middle';
+              const anchor = p.x < padL + 14 ? 'start' : p.x > padL + plotW - 14 ? 'end' : 'middle';
               return (
                 <SvgText
                   key={`v${i}`}
