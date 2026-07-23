@@ -7,9 +7,12 @@ import { Text } from '@/components/ui/Text';
 import { Avatar } from '@/components/ui/Avatar';
 import { Divider } from '@/components/ui/Divider';
 import { LiveDot } from '@/components/ui/LiveDot';
+import { theme } from '@/theme/theme';
 import { formatThousands } from '@/lib/format';
 
 const MEDAL = ['#C9A65B', '#B9BDC4', '#C08457']; // gold / silver / bronze
+// Serif + tabular figures for the ranked values, matching the app's display type.
+const VALUE_FONT = { fontFamily: theme.fontFamily.display, fontVariant: ['tabular-nums' as const] };
 
 function pctText(pct: number): string {
   if (pct > 0) return `${pct.toFixed(1)}%`;
@@ -66,7 +69,7 @@ function Podium({ entry, metric }: { entry: LeaderRow; metric: LeaderMetric }): 
       <Text variant="labelMd" numberOfLines={1} style={styles.podiumName}>
         {entry.isCurrentUser ? 'You' : entry.name}
       </Text>
-      <Text variant="titleMd" style={{ color: colors.status.positive }}>
+      <Text variant="titleMd" style={{ color: colors.status.positive, ...VALUE_FONT }}>
         {mainText(entry, metric)}
       </Text>
       <Text variant="labelSm" color="tertiary" numberOfLines={1}>
@@ -110,7 +113,7 @@ function Row({ entry, metric }: { entry: LeaderRow; metric: LeaderMetric }): Rea
       <View style={styles.right}>
         <Text
           variant="titleMd"
-          style={{ color: positive ? colors.status.positive : colors.text.tertiary }}
+          style={{ color: positive ? colors.status.positive : colors.text.tertiary, ...VALUE_FONT }}
         >
           {mainText(entry, metric)}
         </Text>
