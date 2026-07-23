@@ -46,15 +46,9 @@ export function WeightJourneyChart({
   const plotBottom = padT + plotH;
 
   const reads = series.filter((p) => p.hasReading);
-  // Plot the SMOOTHED trend (same EWMA as the "Trend weight" headline, alpha 0.1), not raw readings,
-  // so the line matches the number and a single heavy day never sends it lurching up or down.
-  const alpha = 0.1;
-  let t: number | null = null;
-  const trend = reads.map((p) => {
-    t = t == null ? p.weightKg : t + alpha * (p.weightKg - t);
-    return { day: p.day, weightKg: t };
-  });
-  const vals = trend.length ? trend.map((p) => p.weightKg) : [startKg];
+  // Plot the actual weigh-ins so real day-to-day movement (up AND down) shows; the smoothed
+  // "Trend weight" headline above the chart carries the calm number.
+  const vals = reads.length ? reads.map((p) => p.weightKg) : [startKg];
 
   // Frame vertically between start (top) and goal (bottom), expanding for any trend beyond them.
   const top = Math.max(startKg, ...vals);
@@ -64,16 +58,21 @@ export function WeightJourneyChart({
   const yMax = top + m;
   const yMin = bot - m;
 
-  const first = trend.length ? trend[0]!.day : 1;
-  const lastD = trend.length ? trend[trend.length - 1]!.day : 1;
+  const first = reads.length ? reads[0]!.day : 1;
+  const lastD = reads.length ? reads[reads.length - 1]!.day : 1;
   const single = first === lastD;
+  // A constant 2-day buffer on each side: points never touch the edges and the up/down slope always
+  // has room to breathe (also centers a lone reading).
+  const BUFFER = 2;
+  const domainStart = first - BUFFER;
+  const domainEnd = lastD + BUFFER;
   const x = (day: number): number =>
-    single ? padL + plotW / 2 : padL + ((day - first) / (lastD - first)) * plotW;
+    padL + ((day - domainStart) / (domainEnd - domainStart)) * plotW;
   const y = (kg: number): number =>
     Math.min(Math.max(padT + (1 - (kg - yMin) / (yMax - yMin)) * plotH, padT), plotBottom);
 
   const startY = y(startKg);
-  const pts = trend.map((p) => ({ x: x(p.day), y: y(p.weightKg) }));
+  const pts = reads.map((p) => ({ x: x(p.day), y: y(p.weightKg), kg: p.weightKg }));
   const linePoints = pts.map((p) => `${p.x},${p.y}`).join(' ');
   const areaPoints = pts.length
     ? [
@@ -155,17 +154,42 @@ export function WeightJourneyChart({
               />
             ))}
 
-            {/* Day axis */}
-            <SvgText x={padL} y={height - 4} fontSize={10} fill={colors.text.tertiary}>
+            {/* Label every point (values alternate above / below to reduce crowding) */}
+            {pts.map((p, i) => {
+              const above = i % 2 === 0;
+              const ly = Math.min(Math.max(above ? p.y - 9 : p.y + 16, 11), plotBottom + 12);
+              return (
+                <SvgText
+                  key={`v${i}`}
+                  x={p.x}
+                  y={ly}
+                  fontSize={9}
+                  fontWeight="600"
+                  fill={colors.brand.pine}
+                  textAnchor="middle"
+                >
+                  {round(kgToDisplay(p.kg, unit), 0)}
+                </SvgText>
+              );
+            })}
+
+            {/* Day axis (aligned with the first / last points) */}
+            <SvgText
+              x={x(first)}
+              y={height - 4}
+              fontSize={10}
+              fill={colors.text.tertiary}
+              textAnchor="middle"
+            >
               Day {first}
             </SvgText>
             {!single ? (
               <SvgText
-                x={padL + plotW}
+                x={x(lastD)}
                 y={height - 4}
                 fontSize={10}
                 fill={colors.text.tertiary}
-                textAnchor="end"
+                textAnchor="middle"
               >
                 Day {lastD}
               </SvgText>
